@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type AuthFormProps = { mode: "login" | "register" };
 type AuthResponse = { message?: string; error?: { message?: string } };
@@ -29,7 +31,13 @@ export function AuthForm({ mode }: AuthFormProps) {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(isRegister ? { name, email, password } : { email, password }),
       });
-      const result = (await response.json()) as AuthResponse;
+      const body = await response.text();
+      let result: AuthResponse;
+      try {
+        result = body ? JSON.parse(body) as AuthResponse : {};
+      } catch {
+        throw new Error(response.status >= 500 ? "SalonBook’s API is temporarily unavailable. Please try again in a moment." : "The server returned an unexpected response. Please check the API configuration.");
+      }
       if (!response.ok) throw new Error(result.error?.message ?? result.message ?? "Could not sign in.");
       const next = new URLSearchParams(window.location.search).get("next");
       const destination = !isRegister && next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
@@ -42,14 +50,14 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
   }
 
-  return <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+  return <form onSubmit={handleSubmit} className="mt-7 space-y-5" aria-busy={busy}>
     {isRegister && <Field label="Full name" name="name" autoComplete="name" required />}
     <Field label="Email address" name="email" type="email" autoComplete="email" required />
     <Field label="Password" name="password" type="password" autoComplete={isRegister ? "new-password" : "current-password"} minLength={8} required />
     {error && <p role="alert" className="rounded-xl border border-red-900/70 bg-red-950/40 px-4 py-3 text-sm text-red-200">{error}</p>}
-    <button disabled={busy} className="w-full rounded-xl bg-[var(--primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-wait disabled:opacity-60">
+    <Button type="submit" size="lg" className="w-full" disabled={busy}>
       {busy ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
-    </button>
+    </Button>
     <p className="text-center text-sm text-[var(--muted)]">{isRegister ? "Already have an account? " : "New to SalonBook? "}
       <Link className="font-medium text-[var(--green-light)] hover:underline" href={isRegister ? "/login" : "/register"}>{isRegister ? "Sign in" : "Create an account"}</Link>
     </p>
@@ -58,7 +66,6 @@ export function AuthForm({ mode }: AuthFormProps) {
 
 function Field(props: { label: string; name: string; type?: string; autoComplete: string; minLength?: number; required?: boolean }) {
   return <label className="block space-y-2 text-sm font-medium text-[var(--foreground)]"><span>{props.label}</span>
-    <input name={props.name} type={props.type ?? "text"} autoComplete={props.autoComplete} minLength={props.minLength} required={props.required}
-      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-base outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--green-light)] focus:ring-2 focus:ring-[var(--primary)]/25" />
+    <Input name={props.name} type={props.type ?? "text"} autoComplete={props.autoComplete} minLength={props.minLength} required={props.required} />
   </label>;
 }

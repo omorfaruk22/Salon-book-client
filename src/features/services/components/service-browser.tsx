@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { Search, Scissors } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ApiEnvelope, SalonService } from "@/types/service";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { ServiceCard } from "@/components/ui/service-card";
+import { ServiceCardSkeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-const money = new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 });
 
 export function ServiceBrowser() {
   const [services, setServices] = useState<SalonService[]>([]);
@@ -15,6 +19,7 @@ export function ServiceBrowser() {
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("name");
   const [loading, setLoading] = useState(true);
+  const [retry, setRetry] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -27,7 +32,8 @@ export function ServiceBrowser() {
       if (category) params.set("category", category);
       try {
         const response = await fetch(`${apiBase}/services?${params}`, { signal: controller.signal, cache: "no-store" });
-        const result = (await response.json()) as ApiEnvelope<SalonService[]>;
+        const result = await response.json().catch(() => null) as ApiEnvelope<SalonService[]> | null;
+        if (!result) throw new Error("The service server returned an unreadable response. Please try again.");
         if (!response.ok) throw new Error(result.error?.message ?? "Could not load services.");
         setServices(result.data);
         setCategories(result.meta?.categories ?? []);
@@ -38,27 +44,16 @@ export function ServiceBrowser() {
       }
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [search, category, sort]);
+  }, [search, category, sort, retry]);
 
-  return <section>
-    <div className="mt-8 grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-[1fr_220px_220px]">
-      <label className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-4"><Search size={18} className="text-[var(--muted)]" /><span className="sr-only">Search services</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services" className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-[var(--muted)]" /></label>
-      <label className="sr-only" htmlFor="service-category">Filter by category</label><select id="service-category" value={category} onChange={(event) => setCategory(event.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"><option value="">All categories</option>{categories.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</select>
-      <label className="sr-only" htmlFor="service-sort">Sort services</label><select id="service-sort" value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"><option value="name">Name</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option></select>
+  return <section aria-label="Browse salon services">
+    <div className="mt-8 grid gap-3 rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4 md:grid-cols-[minmax(0,1fr)_220px_220px]">
+      <label className="relative"><span className="sr-only">Search services</span><Search size={17} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services" className="pl-11" /></label>
+      <label><span className="sr-only">Filter by category</span><Select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">All categories</option>{categories.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</Select></label>
+      <label><span className="sr-only">Sort services</span><Select value={sort} onChange={(event) => setSort(event.target.value)}><option value="name">Sort: name</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option></Select></label>
     </div>
-    {error && <p role="alert" className="mt-6 rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-red-200">{error}</p>}
-    {loading ? <p className="py-16 text-center text-[var(--muted)]">Loading salon services…</p> : services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.map((service) => <ServiceCard key={service._id} service={service} />)}</div> : !error && <div className="mt-8 rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center"><Scissors className="mx-auto text-[var(--green-light)]" /><h2 className="mt-4 text-xl font-semibold">No services found</h2><p className="mt-2 text-sm text-[var(--muted)]">Try a different search or category.</p></div>}
+    {error ? <ErrorState className="mt-6" description={error} onRetry={() => setRetry((value) => value + 1)} /> : loading ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading salon services">{Array.from({ length: 6 }, (_, index) => <ServiceCardSkeleton key={index} />)}</div> : services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.map((service) => <ServiceCard key={service._id} service={service} />)}</div> : <div className="mt-8"><EmptyState icon={<Scissors className="size-5" />} title="No services found" description="Try a different search or category." /></div>}
   </section>;
-}
-
-function ServiceCard({ service }: { service: SalonService }) {
-  return <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] transition hover:-translate-y-1 hover:border-[var(--primary)]/70">
-    {service.imageUrl ? <img src={service.imageUrl} alt="" className="h-48 w-full object-cover" /> : <div className="flex h-48 items-center justify-center bg-gradient-to-br from-[var(--surface)] to-[var(--primary)]/20"><Scissors className="text-[var(--green-light)]" size={34} /></div>}
-    <div className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs font-medium capitalize text-[var(--green-light)]">{service.category}</span><span className="text-xs text-[var(--muted)]">{service.durationMinutes} min</span></div>
-      <h2 className="mt-4 text-xl font-semibold">{service.name}</h2><p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[var(--muted)]">{service.description}</p>
-      <div className="mt-5 flex items-center justify-between"><strong className="text-lg">{money.format(service.price)}</strong><Link href={`/services/${service.slug}`} className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:border-[var(--green-light)] hover:text-[var(--green-light)]">Details</Link></div>
-    </div>
-  </article>;
 }
 
 function titleCase(value: string) { return value.replace(/\b\w/g, (letter) => letter.toUpperCase()); }

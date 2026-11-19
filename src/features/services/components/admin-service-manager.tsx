@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { apiFetch } from "@/lib/api-client";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 
@@ -103,7 +104,7 @@ export function AdminServiceManager() {
         <Field label="Category" value={form.category} onChange={(value) => setForm({ ...form, category: value })} placeholder="Hair, Nails, Facial…" required />
         <Field label="Price (BDT)" type="number" min="0" step="1" value={form.price} onChange={(value) => setForm({ ...form, price: value })} required />
         <Field label="Duration (minutes)" type="number" min="5" max="600" step="5" value={form.durationMinutes} onChange={(value) => setForm({ ...form, durationMinutes: value })} required />
-        <div className="space-y-3"><Field label="Image URL (optional)" type="url" value={form.imageUrl} onChange={(value) => setForm({ ...form, imageUrl: value })} /><label className="inline-flex cursor-pointer items-center rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-[var(--green-light)] hover:border-[var(--green-light)]"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(event)} disabled={uploadingImage} className="sr-only" />{uploadingImage ? "Uploading image…" : "Choose and upload image"}</label>{form.imageUrl && <img src={form.imageUrl} alt="Service preview" className="h-20 w-20 rounded-xl border border-[var(--border)] object-cover" />}</div>
+        <div className="space-y-3"><Field label="Image URL (optional)" type="url" value={form.imageUrl} onChange={(value) => setForm({ ...form, imageUrl: value })} /><label className="inline-flex cursor-pointer items-center rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-[var(--green-light)] hover:border-[var(--green-light)]"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(event)} disabled={uploadingImage} className="sr-only" />{uploadingImage ? "Uploading image…" : "Choose and upload image"}</label>{form.imageUrl && <Image src={form.imageUrl} alt="Service preview" width={80} height={80} unoptimized className="size-20 rounded-xl border border-[var(--border)] object-cover" />}</div>
         <label className="block space-y-2 text-sm font-medium md:col-span-2"><span>Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} minLength={10} maxLength={2000} rows={4} required className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none focus:border-[var(--green-light)]" /></label>
         {error && <p role="alert" className="rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-200 md:col-span-2">{error}</p>}
         {notice && <p role="status" className="rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/10 px-4 py-3 text-sm text-[var(--green-soft)] md:col-span-2">{notice}</p>}

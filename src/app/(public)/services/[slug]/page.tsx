@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Clock3, Scissors } from "lucide-react";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 import { AppointmentRequestForm } from "@/features/appointments/components/appointment-request-form";
+import Image from "next/image";
+import { Container } from "@/components/ui/container";
 
 // This page is a Server Component, so its fetch needs an absolute backend URL.
 // NEXT_PUBLIC_API_URL is `/api` in production for browser requests and is not
@@ -18,15 +20,17 @@ export default async function ServiceDetailsPage({ params }: { params: Promise<{
   const result = (await response.json()) as ApiEnvelope<SalonService>;
   const service = result.data;
 
-  return <main className="mx-auto max-w-5xl px-6 py-12">
-    <Link href="/services" className="inline-flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--green-light)]"><ArrowLeft size={16} /> All services</Link>
-    <article className="mt-8 grid overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] md:grid-cols-2">
-      {service.imageUrl ? <img src={service.imageUrl} alt={service.name} className="h-full min-h-72 w-full object-cover" /> : <div className="flex min-h-72 items-center justify-center bg-gradient-to-br from-[var(--surface)] to-[var(--primary)]/20"><Scissors size={48} className="text-[var(--green-light)]" /></div>}
-      <div className="p-7 md:p-10"><span className="rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs font-medium capitalize text-[var(--green-light)]">{service.category}</span><h1 className="mt-5 text-3xl font-semibold">{service.name}</h1><p className="mt-5 leading-7 text-[var(--muted)]">{service.description}</p>
+  return <main className="py-10 sm:py-14">
+    <Container className="max-w-6xl">
+    <Link href="/services" className="inline-flex min-h-10 items-center gap-2 rounded-lg text-sm text-[var(--muted)] transition hover:text-[var(--green-light)]"><ArrowLeft size={16} /> All services</Link>
+    <article className="mt-6 grid overflow-hidden rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)] shadow-[0_25px_80px_rgb(0_0_0_/_20%)] md:grid-cols-[.9fr_1.1fr]">
+      {service.imageUrl ? <Image src={service.imageUrl} alt={service.name} width={900} height={1100} unoptimized priority className="h-72 w-full bg-[var(--surface)] object-cover md:h-full md:min-h-[42rem]" /> : <div className="flex min-h-72 items-center justify-center bg-[radial-gradient(circle_at_50%_35%,rgb(34_197_94_/_15%),transparent_48%),linear-gradient(135deg,#111714,#151d18)] md:min-h-[42rem]"><Scissors size={48} className="text-[var(--green-light)]" /></div>}
+      <div className="p-5 sm:p-8 md:p-10"><span className="inline-flex rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs font-semibold capitalize text-[var(--green-light)]">{service.category}</span><h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{service.name}</h1><p className="mt-5 whitespace-pre-line text-sm leading-7 text-[var(--muted)] sm:text-base">{service.description}</p>
         <div className="mt-8 flex items-center gap-2 text-sm text-[var(--muted)]"><Clock3 size={17} /> {service.durationMinutes} minutes</div>
         <div className="mt-5 border-t border-[var(--border)] pt-5"><span className="text-sm text-[var(--muted)]">Starting from</span><p className="mt-1 text-3xl font-semibold">{money.format(service.price)}</p></div>
         <AppointmentRequestForm serviceId={service._id} />
       </div>
     </article>
+    </Container>
   </main>;
 }

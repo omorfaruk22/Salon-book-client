@@ -1,3 +1,6 @@
 import { AdminServiceManager } from "@/features/services/components/admin-service-manager";
-export default function AdminServicesPage() { return <main className="mx-auto max-w-6xl p-6 md:p-8"><p className="text-sm font-semibold uppercase tracking-[.2em] text-[var(--green-light)]">Admin</p><h1 className="mt-3 text-3xl font-semibold">Manage services</h1><p className="mt-2 text-[var(--muted)]">Maintain the salon menu, pricing, and availability.</p><AdminServiceManager /></main>; }
+import { Container } from "@/components/ui/container";
+import { SectionHeading } from "@/components/ui/section-heading";
+
+export default function AdminServicesPage() { return <main className="py-10 sm:py-14"><Container><SectionHeading eyebrow="Admin" title="Manage services" description="Maintain the salon menu, pricing, and availability." /><AdminServiceManager /></Container></main>; }
 

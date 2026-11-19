@@ -1,3 +1,6 @@
 import { AdminAppointments } from "@/features/appointments/components/admin-appointments";
-export default function AdminAppointmentsPage() { return <main className="mx-auto max-w-6xl p-6 md:p-8"><p className="text-sm font-semibold uppercase tracking-[.2em] text-[var(--green-light)]">Admin</p><h1 className="mt-3 text-3xl font-semibold">Manage appointments</h1><AdminAppointments /></main>; }
+import { Container } from "@/components/ui/container";
+import { SectionHeading } from "@/components/ui/section-heading";
+
+export default function AdminAppointmentsPage() { return <main className="py-10 sm:py-14"><Container><SectionHeading eyebrow="Admin" title="Manage appointments" description="Review new requests and keep the appointment schedule up to date." /><AdminAppointments /></Container></main>; }
 

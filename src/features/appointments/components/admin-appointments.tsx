@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import type { ApiEnvelope } from "@/types/service";
-import type { AppointmentStatus, SalonAppointment } from "@/types/appointment";
+import type { SalonAppointment } from "@/types/appointment";
 import { StatusPill } from "./customer-appointments";
 
 const currency = new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 });
