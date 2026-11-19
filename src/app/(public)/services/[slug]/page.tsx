@@ -4,7 +4,10 @@ import { ArrowLeft, Clock3, Scissors } from "lucide-react";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 import { AppointmentRequestForm } from "@/features/appointments/components/appointment-request-form";
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+// This page is a Server Component, so its fetch needs an absolute backend URL.
+// NEXT_PUBLIC_API_URL is `/api` in production for browser requests and is not
+// a valid URL when used directly by server-side fetch.
+const apiBase = `${(process.env.SALONBOOK_API_ORIGIN ?? "http://localhost:4000").replace(/\/+$/, "")}/api`;
 const money = new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 });
 
 export default async function ServiceDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
