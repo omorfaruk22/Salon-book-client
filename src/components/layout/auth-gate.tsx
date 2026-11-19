@@ -1,29 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api-client";
-import type { ApiEnvelope } from "@/types/service";
-import type { SalonUser } from "@/types/appointment";
+import { authClient } from "@/lib/auth-client";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export function AuthGate({ children, role }: { children: React.ReactNode; role: "customer" | "admin" }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [allowed, setAllowed] = useState(false);
+  const { user, isLoading, profileError } = useAuth();
 
   useEffect(() => {
-    let active = true;
-    setAllowed(false);
-    void apiFetch("/users/me").then(async (response) => {
-      const result = (await response.json()) as ApiEnvelope<SalonUser>;
-      if (!response.ok) throw new Error(result.error?.message ?? "Sign in required");
-      const hasAccess = role === "customer" || result.data.role === "admin";
-      if (!hasAccess) { router.replace("/dashboard"); return; }
-      if (active) setAllowed(true);
-    }).catch(() => { if (active) router.replace(`/login?next=${encodeURIComponent(pathname)}`); });
-    return () => { active = false; };
-  }, [pathname, role, router]);
+    if (isLoading) return;
+    if (profileError?.status === 403) {
+      void authClient.signOut().catch(() => undefined).finally(() => router.replace("/sign-in?error=blocked"));
+      return;
+    }
+    if (profileError?.status === 401) {
+      router.replace(`/sign-in?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (profileError) return;
+    if (!user) {
+      router.replace(`/sign-in?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (user.role !== role) router.replace(user.role === "admin" ? "/admin" : "/dashboard");
+  }, [isLoading, pathname, profileError, role, router, user]);
 
-  if (!allowed) return <main className="mx-auto flex min-h-[50vh] max-w-5xl items-center justify-center px-6"><p className="text-sm text-[var(--muted)]">Checking account access…</p></main>;
+  if (profileError) return <main className="mx-auto flex min-h-[50vh] max-w-5xl items-center justify-center px-6"><p role="alert" className="rounded-xl border border-red-900/70 bg-red-950/40 px-5 py-4 text-sm text-red-200">{profileError.message}</p></main>;
+  if (isLoading || !user || user.role !== role) return <main className="mx-auto flex min-h-[50vh] max-w-5xl items-center justify-center px-6"><p className="text-sm text-[var(--muted)]">Checking account access…</p></main>;
   return children;
 }

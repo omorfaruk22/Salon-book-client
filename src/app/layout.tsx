@@ -3,6 +3,7 @@ import type { Viewport } from "next";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 export const metadata: Metadata = {
   title: { default: "SalonBook | Salon appointments, made simple", template: "%s | SalonBook" },
@@ -22,8 +23,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <ToastProvider>
-          <SiteHeader />
-          {children}
+          <AuthProvider>
+            <SiteHeader />
+            {children}
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>
