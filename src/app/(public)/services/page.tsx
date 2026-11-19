@@ -1,7 +1,12 @@
-import { ServiceBrowser } from "@/features/services/components/service-browser";
-import { Container } from "@/components/ui/container";
-import { SectionHeading } from "@/components/ui/section-heading";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { ServiceBrowser, ServiceBrowserFallback } from "@/features/services/components/service-browser";
+
+export const metadata: Metadata = {
+  title: { absolute: "Browse Salon Services | SalonBook" },
+  description: "Explore salon services, compare prices, and find the right beauty and personal care experience with SalonBook.",
+};
 
 export default function ServicesPage() {
-  return <main className="py-12 sm:py-16"><Container><SectionHeading eyebrow="Our menu" title="Salon services" description="Find the right care for your next visit. Compare services, durations, and prices." /><ServiceBrowser /></Container></main>;
+  return <Suspense fallback={<ServiceBrowserFallback />}><ServiceBrowser /></Suspense>;
 }
