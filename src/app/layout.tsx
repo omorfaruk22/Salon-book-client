@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
 import "./globals.css";
-import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/providers/toast-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
@@ -24,7 +23,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <ToastProvider>
           <AuthProvider>
-            <SiteHeader />
             {children}
           </AuthProvider>
         </ToastProvider>

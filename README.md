@@ -16,6 +16,8 @@ Set `NEXT_PUBLIC_API_URL=/api` on the frontend deployment and set `CLIENT_ORIGIN
 
 Better Auth client requests and its `useSession` hook use the same-origin API rewrite and keep session state in Better Auth's HttpOnly cookie. REST requests obtain 15-minute API JWTs through the Better Auth JWT plugin; the client does not write tokens to localStorage. Express validates these tokens with EdDSA, JWKS, expiration, issuer, and audience.
 
+The public and authentication route groups share the marketing header and footer. Customer and Admin route groups stay outside that shell so the public navigation does not appear in dashboards. About, Contact, Privacy, and Terms routes are present; legal pages are explicit placeholders until approved text is available. `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE`, `NEXT_PUBLIC_SALON_LOCATION`, and the `NEXT_PUBLIC_*_URL` social variables are optional public display configuration. Leave them empty until the real business details and official social accounts are confirmed.
+
 The auth pages are available at `/sign-in` and `/sign-up` (the existing `/login` and `/register` paths remain compatible). Public registration creates customers only. Admin accounts are provisioned from the API repository with its `admin:promote` script; no Admin role field is exposed in the client.
 
 Google OAuth is configured only on the API. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` there and add `<client origin>/api/auth/callback/google` as an Authorized redirect URI in Google Cloud Console. Google sign-in has not been live-verified unless those provider credentials are configured.

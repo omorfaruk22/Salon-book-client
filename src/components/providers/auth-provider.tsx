@@ -8,6 +8,7 @@ import type { ApiEnvelope } from "@/types/service";
 
 type AuthContextValue = {
   user: SalonUser | null;
+  avatarUrl: string | null;
   isLoading: boolean;
   profileError: { message: string; status?: number } | null;
   refreshProfile: (authUserId?: string) => Promise<ProfileResult>;
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const sessionState = authClient.useSession();
   const sessionUserId = sessionState.data?.user.id;
+  const avatarUrl = sessionState.data?.user.image ?? null;
   const [user, setUser] = useState<SalonUser | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<AuthContextValue["profileError"]>(null);
@@ -81,10 +83,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
+    avatarUrl,
     isLoading: sessionState.isPending || (!!sessionUserId && profileLoading),
     profileError,
     refreshProfile,
-  }), [user, sessionState.isPending, sessionUserId, profileLoading, profileError, refreshProfile]);
+  }), [user, avatarUrl, sessionState.isPending, sessionUserId, profileLoading, profileError, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
