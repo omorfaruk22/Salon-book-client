@@ -26,7 +26,7 @@ export function ServiceCard({ service }: { service: SalonService }) {
           <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[var(--muted)]">{service.description}</p>
           <div className="mt-5 flex items-end justify-between gap-3 border-t border-[var(--border)] pt-4">
             <div><span className="block text-[11px] text-[var(--muted)]">Starting from</span><strong className="mt-0.5 block text-lg font-semibold">{money.format(service.price)}</strong></div>
-            <span className="grid size-9 place-items-center rounded-full border border-[var(--border)] text-[var(--muted)] transition group-hover:border-[var(--green-light)]/50 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--green-light)]"><ArrowUpRight className="size-4" aria-hidden="true" /></span>
+            <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-xs font-semibold text-[var(--foreground)] transition group-hover:border-[var(--green-light)]/50 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--green-light)]">View details <ArrowUpRight className="size-4" aria-hidden="true" /></span>
           </div>
         </div>
       </Link>

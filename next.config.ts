@@ -4,6 +4,9 @@ const apiOrigin = (process.env.SALONBOOK_API_ORIGIN ?? "http://localhost:4000").
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   outputFileTracingRoot: process.cwd(),
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com", pathname: "/**" }],
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiOrigin}/api/:path*` }];
   },

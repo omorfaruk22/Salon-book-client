@@ -9,14 +9,13 @@ import { ServiceCard } from "@/components/ui/service-card";
 import { ServiceCardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+import { apiUrl } from "@/lib/api-url";
 
 export function ServiceBrowser() {
   const [services, setServices] = useState<SalonService[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("category") ?? "");
   const [sort, setSort] = useState("name");
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -31,7 +30,7 @@ export function ServiceBrowser() {
       if (search.trim()) params.set("q", search.trim());
       if (category) params.set("category", category);
       try {
-        const response = await fetch(`${apiBase}/services?${params}`, { signal: controller.signal, cache: "no-store" });
+        const response = await fetch(apiUrl(`/services?${params}`), { signal: controller.signal, cache: "no-store" });
         const result = await response.json().catch(() => null) as ApiEnvelope<SalonService[]> | null;
         if (!result) throw new Error("The service server returned an unreadable response. Please try again.");
         if (!response.ok) throw new Error(result.error?.message ?? "Could not load services.");

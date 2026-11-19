@@ -1,6 +1,5 @@
 import { authClient } from "@/lib/auth-client";
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+import { apiUrl } from "@/lib/api-url";
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
   const { data, error } = await authClient.token();
@@ -10,7 +9,7 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   headers.set("Authorization", `Bearer ${data.token}`);
   if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
 
-  return fetch(`${apiBase}${path.startsWith("/") ? path : `/${path}`}`, {
+  return fetch(apiUrl(path), {
     ...init,
     headers,
     credentials: "include",
