@@ -37,14 +37,18 @@ export type SalonUser = {
 export type SalonTransaction = {
   _id: string;
   appointmentId: string;
-  customerId: string;
+  serviceId?: string;
   serviceName: string;
   amount: number;
   currency: string;
   provider: "stripe";
-  providerSessionId?: string;
-  providerPaymentIntentId?: string;
+  paymentMethod?: string;
   status: "pending" | "paid" | "failed" | "refunded";
   paidAt?: string;
   createdAt: string;
+  updatedAt?: string;
+};
+
+export type AdminSalonTransaction = SalonTransaction & {
+  customer: { name: string; email: string };
 };

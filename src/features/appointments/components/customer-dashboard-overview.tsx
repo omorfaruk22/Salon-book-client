@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, CalendarCheck2, CalendarClock, CalendarX2, CalendarDays } from "lucide-react";
 import { AppointmentServiceImage } from "@/features/appointments/components/appointment-service-image";
+import { AppointmentPaymentAction } from "@/features/appointments/components/appointment-payment-action";
 import { StatusPill } from "@/features/appointments/components/customer-appointments";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ErrorState } from "@/components/ui/error-state";
@@ -80,7 +81,7 @@ export function CustomerDashboardOverview() {
         : appointments.length ? <div className="grid gap-3">{appointments.map((appointment) => <article key={appointment._id} className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:p-5">
           <AppointmentServiceImage imageUrl={appointment.serviceSnapshot.imageUrl} name={appointment.serviceSnapshot.name} className="h-24 w-full shrink-0 rounded-xl sm:w-32" />
           <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold">{appointment.serviceSnapshot.name}</h3><StatusPill status={appointment.status} /></div><p className="mt-1 text-sm text-[var(--muted)]">{formatSalonAppointmentTime(appointment.appointmentDate, appointment.timeSlot, appointment.startsAt)} · {formatBDTPrice(appointment.serviceSnapshot.price)}</p><p className="mt-1 text-xs text-[var(--muted)]">Payment: <span className={appointment.paymentStatus === "paid" ? "text-[var(--green-light)]" : "text-amber-300"}>{(appointment.paymentStatus ?? "unpaid").toUpperCase()}</span></p></div>
-          <Link href={`/dashboard/my-appointments/${appointment._id}`} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] px-4 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--green-light)]/60 hover:text-white">View details</Link>
+          <div className="flex shrink-0 flex-wrap gap-2"><Link href={`/dashboard/my-appointments/${appointment._id}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[var(--border)] px-4 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--green-light)]/60 hover:text-white">View details</Link>{appointment.status === "confirmed" && appointment.paymentStatus !== "paid" && <AppointmentPaymentAction appointmentId={appointment._id} compact />}</div>
         </article>)}</div>
           : <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center sm:p-12"><p className="text-lg font-semibold">No appointments yet</p><p className="mt-2 text-sm text-[var(--muted)]">Browse our services and book your first salon visit.</p><Link href="/services" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--primary)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)]">Browse services</Link></div>}
     </section>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CalendarDays, Clock3, Hash, Wallet } from "lucide-react";
 import { AppointmentServiceImage } from "@/features/appointments/components/appointment-service-image";
+import { AppointmentPaymentAction } from "@/features/appointments/components/appointment-payment-action";
 import { StatusPill } from "@/features/appointments/components/customer-appointments";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,6 +57,7 @@ export function MyAppointmentDetails({ appointmentId }: { appointmentId: string 
           <DetailItem Icon={Wallet} label="Payment status" value={paymentStatus.toUpperCase()} />
         </dl>
         {appointment.customerNote && <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"><p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Your message</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6">{appointment.customerNote}</p></div>}
+        {appointment.status === "confirmed" && paymentStatus === "unpaid" && <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"><h2 className="font-semibold">Complete your payment</h2><p className="mt-1 mb-4 text-sm text-[var(--muted)]">Payment is available after the salon confirms your appointment.</p><AppointmentPaymentAction appointmentId={appointment._id} /></div>}
       </div>
     </article>
   </div>;
