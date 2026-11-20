@@ -6,6 +6,7 @@ import type { ApiEnvelope } from "@/types/service";
 import type { SalonAppointment } from "@/types/appointment";
 import type { SalonTransaction } from "@/types/appointment";
 import { formatSalonAppointmentTime } from "@/lib/service-format";
+import { notifyAppointmentsChanged } from "@/lib/appointment-events";
 
 const currency = new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 });
 
@@ -36,7 +37,7 @@ export function CustomerAppointments() {
       const response = await apiFetch(`/appointments/${id}/cancel`, { method: "PATCH" });
       const result = (await response.json()) as ApiEnvelope<SalonAppointment>;
       if (!response.ok) throw new Error(result.error?.message ?? "Could not cancel appointment.");
-      setNotice("Appointment request cancelled."); await load();
+      setNotice("Appointment request cancelled."); notifyAppointmentsChanged(); await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not cancel appointment."); }
   }
 
@@ -69,6 +70,6 @@ export function CustomerAppointments() {
 }
 
 export function StatusPill({ status }: { status: string }) {
-  const classes = status === "confirmed" ? "bg-[var(--primary)]/15 text-[var(--green-light)]" : status === "pending" ? "bg-amber-500/10 text-amber-300" : status === "completed" ? "bg-sky-500/10 text-sky-300" : "bg-slate-700/60 text-[var(--muted)]";
+  const classes = status === "confirmed" ? "bg-[var(--primary)]/15 text-[var(--green-light)]" : status === "pending" ? "bg-amber-500/10 text-amber-300" : status === "cancelled" ? "bg-red-500/10 text-red-300" : status === "completed" ? "bg-sky-500/10 text-sky-300" : "bg-slate-700/60 text-[var(--muted)]";
   return <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${classes}`}>{status}</span>;
 }

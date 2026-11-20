@@ -145,10 +145,10 @@ export function SiteHeader() {
               <p className="mt-0.5 text-xs capitalize text-[var(--muted)]">{user.role ?? "customer"}</p>
             </div>
             {user.role !== "admin" && <>
-              <MenuLink href="/appointments" onClick={() => setAccountOpen(false)}>My appointments</MenuLink>
+              <MenuLink href="/dashboard/my-appointments" onClick={() => setAccountOpen(false)}>My appointments</MenuLink>
               <MenuLink href="/transactions" onClick={() => setAccountOpen(false)}>Payments</MenuLink>
             </>}
-            {user.role !== "admin" && <MenuLink href="/profile" onClick={() => setAccountOpen(false)}>My profile</MenuLink>}
+            {user.role !== "admin" && <MenuLink href="/dashboard/profile" onClick={() => setAccountOpen(false)}>My profile</MenuLink>}
             <button role="menuitem" type="button" onClick={() => void signOut()} disabled={signingOut} className="mt-1 flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-medium text-red-200 transition-colors hover:bg-red-950/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)] disabled:opacity-60">
               {signingOut ? "Signing out…" : "Sign out"}
             </button>
@@ -181,9 +181,9 @@ export function SiteHeader() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <MobileAction href={dashboardHref} onClick={() => setMenuOpen(false)}>{dashboardLabel}</MobileAction>
-                {user.role !== "admin" && <MobileAction href="/profile" onClick={() => setMenuOpen(false)}>My profile</MobileAction>}
+                {user.role !== "admin" && <MobileAction href="/dashboard/profile" onClick={() => setMenuOpen(false)}>My profile</MobileAction>}
                 {user.role !== "admin" && <>
-                  <MobileAction href="/appointments" onClick={() => setMenuOpen(false)}>Appointments</MobileAction>
+                  <MobileAction href="/dashboard/my-appointments" onClick={() => setMenuOpen(false)}>Appointments</MobileAction>
                   <MobileAction href="/transactions" onClick={() => setMenuOpen(false)}>Payments</MobileAction>
                 </>}
               </div>

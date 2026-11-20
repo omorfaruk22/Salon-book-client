@@ -11,7 +11,7 @@ type AuthContextValue = {
   avatarUrl: string | null;
   isLoading: boolean;
   profileError: { message: string; status?: number } | null;
-  refreshProfile: (authUserId?: string) => Promise<ProfileResult>;
+  refreshProfile: (authUserId?: string, force?: boolean) => Promise<ProfileResult>;
 };
 type ProfileResult = { user: SalonUser; error?: never } | { user?: never; error: { message: string; status?: number } };
 
@@ -20,25 +20,27 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const sessionState = authClient.useSession();
   const sessionUserId = sessionState.data?.user.id;
-  const avatarUrl = sessionState.data?.user.image ?? null;
+  const sessionAvatarUrl = sessionState.data?.user.image ?? null;
   const [user, setUser] = useState<SalonUser | null>(null);
+  const avatarUrl = user?.imageUrl ?? sessionAvatarUrl;
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<AuthContextValue["profileError"]>(null);
-  const profileRequest = useRef<{ userId: string; promise: Promise<ProfileResult> } | null>(null);
+  const profileRequest = useRef<{ userId: string; promise: Promise<ProfileResult>; token: object } | null>(null);
   const currentSessionUserId = useRef(sessionUserId);
   currentSessionUserId.current = sessionUserId;
 
-  const refreshProfile = useCallback((requestedUserId?: string) => {
+  const refreshProfile = useCallback((requestedUserId?: string, force = false) => {
     const requestedId = requestedUserId ?? sessionUserId;
     if (!requestedId) {
       setUser(null);
       setProfileError(null);
       return Promise.resolve({ error: { message: "Sign in to continue." } } as ProfileResult);
     }
-    if (profileRequest.current?.userId === requestedId) return profileRequest.current.promise;
+    if (!force && profileRequest.current?.userId === requestedId) return profileRequest.current.promise;
 
     setProfileLoading(true);
     setProfileError(null);
+    const requestToken = {};
     const promise = (async (): Promise<ProfileResult> => {
       try {
         const response = await apiFetch("/users/me", { cache: "no-store" });
@@ -59,13 +61,13 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         }
         return { error: failure };
       } finally {
-        if (profileRequest.current?.userId === requestedId) {
+        if (profileRequest.current?.token === requestToken) {
           setProfileLoading(false);
           profileRequest.current = null;
         }
       }
     })();
-    profileRequest.current = { userId: requestedId, promise };
+    profileRequest.current = { userId: requestedId, promise, token: requestToken };
     return promise;
   }, [sessionUserId]);
 

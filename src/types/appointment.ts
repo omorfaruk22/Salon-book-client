@@ -3,13 +3,13 @@ export type SalonAppointment = {
   _id: string;
   customerId: string;
   serviceId: string;
-  serviceSnapshot: { name: string; durationMinutes: number; price: number };
+  serviceSnapshot: { name: string; category?: string; description?: string; imageUrl?: string; durationMinutes: number; price: number };
   startsAt: string;
   appointmentDate?: string;
   timeSlot?: string;
   customerNote?: string;
   status: AppointmentStatus;
-  paymentStatus: "unpaid" | "paid";
+  paymentStatus?: "unpaid" | "paid";
   cancelledBy?: "customer" | "admin";
   createdAt: string;
   updatedAt: string;
@@ -28,6 +28,7 @@ export type SalonUser = {
   name: string;
   email: string;
   phone?: string;
+  imageUrl?: string;
   role?: "customer" | "admin";
   status: "active" | "blocked";
   createdAt: string;

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/providers/toast-provider";
 import { apiFetch } from "@/lib/api-client";
 import { formatBDTPrice, formatServiceDuration, SALON_TIME_ZONE } from "@/lib/service-format";
+import { notifyAppointmentsChanged } from "@/lib/appointment-events";
 import type { AppointmentAvailability, SalonAppointment } from "@/types/appointment";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 
@@ -69,6 +70,7 @@ export function AppointmentRequestForm({ service, initialDate }: AppointmentRequ
       const result = await response.json().catch(() => null) as ApiEnvelope<SalonAppointment> | null;
       if (!response.ok || !result?.data) throw new Error(result?.error?.message ?? "Could not request this appointment.");
       setCreatedAppointment(result.data);
+      notifyAppointmentsChanged();
       toast("Appointment request sent to the salon.", "success");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Could not request this appointment.";
