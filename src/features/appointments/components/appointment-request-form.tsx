@@ -26,7 +26,7 @@ export function AppointmentRequestForm({ serviceId }: { serviceId: string }) {
     finally { setBusy(false); }
   }
 
-  return <section className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+  return <section id="appointment-request" className="scroll-mt-28 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
     <h2 className="text-lg font-semibold">Request an appointment</h2><p className="mt-1 text-sm text-[var(--muted)]">Choose a preferred start time. The salon will confirm your request.</p>
     <form onSubmit={submit} className="mt-4 space-y-4">
       <label className="block space-y-2 text-sm"><span>Preferred date and time</span><input type="datetime-local" min={minDate} required value={startsAt} onChange={(event) => setStartsAt(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-white [color-scheme:dark]" /></label>
