@@ -11,6 +11,7 @@ type AuthContextValue = {
   avatarUrl: string | null;
   isLoading: boolean;
   profileError: { message: string; status?: number } | null;
+  refreshSession: () => Promise<void>;
   refreshProfile: (authUserId?: string, force?: boolean) => Promise<ProfileResult>;
 };
 type ProfileResult = { user: SalonUser; error?: never } | { user?: never; error: { message: string; status?: number } };
@@ -44,10 +45,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   currentSessionUserId.current = sessionUserId;
 
   const sessionErrorStatus = getErrorStatus(sessionError);
-  const hasTransientSessionError = Boolean(sessionError) && sessionErrorStatus !== 401;
+  const hasSessionErrorToRetry = Boolean(sessionError) && sessionRetryCount < MAX_SESSION_RETRIES;
 
   useEffect(() => {
-    if (!sessionError || sessionPending || sessionRefetching || sessionRetrying || sessionUserId || sessionErrorStatus === 401) {
+    if (!sessionError || sessionPending || sessionRefetching || sessionRetrying || sessionUserId) {
       if (!sessionError || sessionUserId) setSessionRetryCount(0);
       return;
     }
@@ -119,6 +120,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     return promise;
   }, [refetchSession, sessionUserId]);
 
+  const refreshSession = useCallback(() => refetchSession(), [refetchSession]);
+
   useEffect(() => {
     if (sessionPending || sessionRefetching || sessionRetrying) return;
     if (!sessionUserId) {
@@ -126,6 +129,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       setUser(null);
       setProfileLoading(false);
       if (sessionError) {
+        if (sessionRetryCount < MAX_SESSION_RETRIES) {
+          setProfileError(null);
+          return;
+        }
         if (sessionErrorStatus === 401) {
           setProfileError({ message: "Your session has expired. Please sign in again.", status: 401 });
         } else if (sessionRetryCount >= MAX_SESSION_RETRIES) {
@@ -146,10 +153,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     avatarUrl,
-    isLoading: sessionPending || sessionRefetching || sessionRetrying || (hasTransientSessionError && sessionRetryCount < MAX_SESSION_RETRIES) || (!!sessionUserId && profileLoading),
+    isLoading: sessionPending || sessionRefetching || sessionRetrying || hasSessionErrorToRetry || (!!sessionUserId && profileLoading),
     profileError,
+    refreshSession,
     refreshProfile,
-  }), [user, avatarUrl, sessionPending, sessionRefetching, sessionRetrying, hasTransientSessionError, sessionRetryCount, sessionUserId, profileLoading, profileError, refreshProfile]);
+  }), [user, avatarUrl, sessionPending, sessionRefetching, sessionRetrying, hasSessionErrorToRetry, sessionUserId, profileLoading, profileError, refreshSession, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
