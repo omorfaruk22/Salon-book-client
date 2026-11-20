@@ -12,4 +12,4 @@ export type SalonService = {
   updatedAt: string;
 };
 
-export type ApiEnvelope<T> = { data: T; error: { message: string } | null; meta?: { total?: number; totalPages?: number; activeTotal?: number; page?: number; limit?: number; categories?: string[] } };
+export type ApiEnvelope<T> = { data: T; error: { message: string } | null; meta?: { total?: number; totalPages?: number; activeTotal?: number; totalServices?: number; activeServices?: number; inactiveServices?: number; page?: number; limit?: number; categories?: string[] } };

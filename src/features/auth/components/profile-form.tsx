@@ -51,8 +51,9 @@ export function ProfileForm() {
 
     setUploading(true);
     try {
-      const image = await fileToBase64(file);
-      const response = await apiFetch("/uploads/image", { method: "POST", body: JSON.stringify({ image, mimeType: file.type, name: file.name }) });
+      const body = new FormData();
+      body.append("image", file);
+      const response = await apiFetch("/uploads/profile-image", { method: "POST", body });
       const result = await response.json().catch(() => null) as ApiEnvelope<{ url: string }> | null;
       if (!response.ok || !result?.data?.url) throw new Error(result?.error?.message ?? "Could not upload your profile photo.");
       setImageUrl(result.data.url);
@@ -104,18 +105,4 @@ export function ProfileForm() {
     {error && <p role="alert" className="rounded-xl border border-red-900/70 bg-red-950/35 p-3 text-sm text-red-200">{error}</p>}
     <button type="submit" disabled={saving || uploading} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--primary)] px-5 font-semibold text-white transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">{saving ? "Saving profile…" : "Save profile"}</button>
   </form>;
-}
-
-function fileToBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Could not read the selected image."));
-    reader.onload = () => {
-      const dataUrl = typeof reader.result === "string" ? reader.result : "";
-      const base64 = dataUrl.split(",")[1];
-      if (!base64) reject(new Error("The selected image could not be encoded."));
-      else resolve(base64);
-    };
-    reader.readAsDataURL(file);
-  });
 }
