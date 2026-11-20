@@ -7,7 +7,8 @@ import { Container } from "@/components/ui/container";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error("SalonBook page error:", error);
+    // Avoid exposing server error text, stacks, request values, or tokens in the browser console.
+    console.error("[SalonBook page error]", { name: error.name, digest: error.digest });
   }, [error]);
 
   return (

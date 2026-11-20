@@ -70,10 +70,10 @@ function LoginForm() {
       }
 
       const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+      const safeNext = safeInternalPath(next);
       const destination = profileResult.user.role === "admin"
-        ? safeNext?.startsWith("/admin") ? safeNext : "/admin"
-        : safeNext?.startsWith("/admin") ? "/dashboard?notice=admin-only"
+        ? safeNext && isAdminPath(safeNext) ? safeNext : "/admin"
+        : safeNext && isAdminPath(safeNext) ? "/dashboard?notice=admin-only"
           : safeNext ?? "/dashboard";
       router.replace(destination);
       router.refresh();
@@ -211,6 +211,21 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
 
 function safeServiceNext(value: string | null) {
   return value && /^\/services\/[a-f\d]{24}$/i.test(value) ? value : null;
+}
+
+function safeInternalPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u001f]/.test(value)) return null;
+  try {
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
+function isAdminPath(value: string) {
+  return value === "/admin" || value.startsWith("/admin/");
 }
 
 function authErrorMessage(error: AuthError, kind: "login" | "register" | "google") {
