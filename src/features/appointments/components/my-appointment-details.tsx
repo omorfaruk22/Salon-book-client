@@ -17,6 +17,22 @@ export function MyAppointmentDetails({ appointmentId }: { appointmentId: string 
   const [appointment, setAppointment] = useState<SalonAppointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let lastRefreshAt = 0;
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastRefreshAt < 1000) return;
+      lastRefreshAt = Date.now();
+      setRefreshKey((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -33,7 +49,7 @@ export function MyAppointmentDetails({ appointmentId }: { appointmentId: string 
     }
     void load();
     return () => controller.abort();
-  }, [appointmentId]);
+  }, [appointmentId, refreshKey]);
 
   if (loading) return <div className="mx-auto max-w-4xl space-y-5"><Skeleton className="h-8 w-52" /><Skeleton className="h-72 rounded-3xl" /><Skeleton className="h-48 rounded-3xl" /></div>;
   if (error || !appointment) return <div className="mx-auto max-w-3xl space-y-4"><ErrorState title="Appointment details unavailable" description={error || "We could not find this appointment."} />{error.toLowerCase().includes("session") && <Link href={`/sign-in?next=${encodeURIComponent(`/dashboard/my-appointments/${appointmentId}`)}`} className="inline-flex min-h-10 items-center text-sm text-[var(--green-light)] underline">Sign in again</Link>}<Link href="/dashboard/my-appointments" className="inline-flex min-h-10 items-center text-sm text-[var(--green-light)] hover:underline"><ArrowLeft className="mr-2 size-4" />Back to appointments</Link></div>;

@@ -65,6 +65,21 @@ export function MyAppointments() {
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [load, retry]);
 
+  useEffect(() => {
+    let lastRefreshAt = 0;
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastRefreshAt < 1000) return;
+      lastRefreshAt = Date.now();
+      setRetry((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
   async function cancelAppointment() {
     if (!cancelTarget || cancellingId) return;
     const id = cancelTarget._id;
