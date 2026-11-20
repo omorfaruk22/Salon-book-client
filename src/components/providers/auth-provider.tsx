@@ -24,6 +24,10 @@ function getErrorStatus(error: unknown) {
   return typeof status === "number" ? status : undefined;
 }
 
+function isSessionUnavailable(error: unknown) {
+  return getErrorStatus(error) === 401 || (error instanceof Error && /session has expired/i.test(error.message));
+}
+
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const sessionState = authClient.useSession();
   const { error: sessionError, isPending: sessionPending, isRefetching: sessionRefetching, refetch: refetchSession } = sessionState;
@@ -72,7 +76,22 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     const requestToken = {};
     const promise = (async (): Promise<ProfileResult> => {
       try {
-        const response = await apiFetch("/users/me", { cache: "no-store" });
+        let response: Response;
+        try {
+          response = await apiFetch("/users/me", { cache: "no-store" });
+        } catch (cause) {
+          if (!isSessionUnavailable(cause)) throw cause;
+          await refetchSession();
+          response = await apiFetch("/users/me", { cache: "no-store" });
+        }
+        if (response.status === 401) {
+          // A short-lived API JWT can expire or be rejected while the
+          // cookie-backed Better Auth session is still valid. Revalidate that
+          // session and request a fresh JWT once before treating the user as
+          // signed out.
+          await refetchSession();
+          response = await apiFetch("/users/me", { cache: "no-store" });
+        }
         const result = await response.json() as ApiEnvelope<SalonUser>;
         if (!response.ok) {
           throw Object.assign(new Error(result.error?.message ?? "Could not load your account."), { status: response.status });
@@ -98,7 +117,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     })();
     profileRequest.current = { userId: requestedId, promise, token: requestToken };
     return promise;
-  }, [sessionUserId]);
+  }, [refetchSession, sessionUserId]);
 
   useEffect(() => {
     if (sessionPending || sessionRefetching || sessionRetrying) return;
