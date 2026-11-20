@@ -20,7 +20,9 @@ export default function OAuthCallbackPage() {
       router.replace("/sign-in?error=google");
       return;
     }
-    router.replace(user.role === "admin" ? "/admin" : "/dashboard");
+    const requestedNext = new URLSearchParams(window.location.search).get("next");
+    const safeNext = requestedNext && /^\/services\/[a-f\d]{24}$/i.test(requestedNext) ? requestedNext : null;
+    router.replace(user.role === "admin" ? "/admin" : safeNext ?? "/dashboard");
   }, [isLoading, profileError, router, user]);
 
   return <main className="mx-auto flex min-h-[55vh] max-w-5xl items-center justify-center px-6">

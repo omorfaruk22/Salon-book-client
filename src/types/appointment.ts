@@ -5,11 +5,21 @@ export type SalonAppointment = {
   serviceId: string;
   serviceSnapshot: { name: string; durationMinutes: number; price: number };
   startsAt: string;
+  appointmentDate?: string;
+  timeSlot?: string;
   customerNote?: string;
   status: AppointmentStatus;
+  paymentStatus: "unpaid" | "paid";
   cancelledBy?: "customer" | "admin";
   createdAt: string;
   updatedAt: string;
+};
+
+export type AppointmentAvailability = {
+  date: string;
+  timeZone: string;
+  service: { _id: string; name: string; category: string; price: number; durationMinutes: number };
+  slots: { value: string; label: string; available: boolean; reason?: "too-soon" | "booked" | "outside-business-hours" }[];
 };
 
 export type SalonUser = {

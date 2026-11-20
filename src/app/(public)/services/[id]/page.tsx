@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { serverApiUrl } from "@/lib/server-api-url";
-import { formatBDTPrice, formatServiceDuration } from "@/lib/service-format";
+import { formatBDTPrice, formatServiceDuration, getSalonCalendarDate } from "@/lib/service-format";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 
 type ServicePageProps = { params: Promise<{ id: string }> };
@@ -101,7 +101,7 @@ export default async function ServiceDetailsPage({ params }: ServicePageProps) {
         </div>
 
         <ServiceAppointmentSection>
-          <AppointmentRequestForm serviceId={service._id} />
+          <AppointmentRequestForm service={service} initialDate={getSalonCalendarDate()} />
         </ServiceAppointmentSection>
 
         <RelatedServices service={service} />

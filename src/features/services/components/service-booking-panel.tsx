@@ -34,7 +34,7 @@ export function ServiceBookingPanel({ service }: { service: SalonService }) {
         <div className="mt-6">
           {isLoading ? <Skeleton className="h-12 w-full rounded-xl" aria-label="Checking your account" />
             : profileError ? <p role="status" className="rounded-xl border border-amber-800/60 bg-amber-950/25 p-3 text-sm leading-6 text-amber-100">We couldn’t verify your account. Refresh this page before booking.</p>
-              : user?.role === "customer" ? <Button asChild className="w-full" size="lg"><a href="#appointment-request">Book This Service<ArrowRight className="size-4" aria-hidden="true" /></a></Button>
+              : user?.role === "customer" ? <Button asChild className="w-full" size="lg"><a href="#appointment-request">Book Appointment<ArrowRight className="size-4" aria-hidden="true" /></a></Button>
                 : user?.role === "admin" ? <div className="space-y-3"><p className="text-sm leading-6 text-[var(--muted)]">Admin accounts can manage appointments from the dashboard, but cannot book as a customer.</p><Button asChild variant="secondary" className="w-full"><Link href="/admin">Open Admin Dashboard<ArrowRight className="size-4" aria-hidden="true" /></Link></Button></div>
                   : <Button asChild className="w-full" size="lg"><Link href={signInHref}>Book This Service<ArrowRight className="size-4" aria-hidden="true" /></Link></Button>}
         </div>

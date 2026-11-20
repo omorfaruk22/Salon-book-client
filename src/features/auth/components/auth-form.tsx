@@ -178,11 +178,19 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
     setLoading(true);
     onError("");
     try {
+      const next = safeServiceNext(new URLSearchParams(window.location.search).get("next"));
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      const errorCallbackUrl = new URL("/sign-in", window.location.origin);
+      if (next) {
+        callbackUrl.searchParams.set("next", next);
+        errorCallbackUrl.searchParams.set("next", next);
+      }
+      errorCallbackUrl.searchParams.set("error", "google");
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: `${window.location.origin}/auth/callback`,
-        errorCallbackURL: `${window.location.origin}/sign-in?error=google`,
-        newUserCallbackURL: `${window.location.origin}/auth/callback`,
+        callbackURL: callbackUrl.toString(),
+        errorCallbackURL: errorCallbackUrl.toString(),
+        newUserCallbackURL: callbackUrl.toString(),
       });
       if (result.error) onError(authErrorMessage(result.error, "google"));
       else if (result.data?.url) window.location.assign(result.data.url);
@@ -198,6 +206,10 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
       {loading && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />} Continue with Google
     </Button>
   </div>;
+}
+
+function safeServiceNext(value: string | null) {
+  return value && /^\/services\/[a-f\d]{24}$/i.test(value) ? value : null;
 }
 
 function authErrorMessage(error: AuthError, kind: "login" | "register" | "google") {
