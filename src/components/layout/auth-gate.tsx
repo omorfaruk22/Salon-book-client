@@ -25,7 +25,10 @@ export function AuthGate({ children, role }: { children: React.ReactNode; role: 
       router.replace(`/sign-in?next=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (user.role !== role) router.replace(user.role === "admin" ? "/admin" : "/dashboard");
+    if (user.role !== role) {
+      if (role === "admin" && user.role === "customer") router.replace("/dashboard?notice=admin-only");
+      else router.replace("/admin?notice=customer-only");
+    }
   }, [isLoading, pathname, profileError, role, router, user]);
 
   if (profileError) return <main className="mx-auto flex min-h-[50vh] max-w-5xl items-center justify-center px-6"><p role="alert" className="rounded-xl border border-red-900/70 bg-red-950/40 px-5 py-4 text-sm text-red-200">{profileError.message}</p></main>;

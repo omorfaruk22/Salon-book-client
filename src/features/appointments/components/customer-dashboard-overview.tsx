@@ -23,6 +23,7 @@ export function CustomerDashboardOverview() {
   const [appointments, setAppointments] = useState<SalonAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [accessNotice, setAccessNotice] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +47,7 @@ export function CustomerDashboardOverview() {
   }, []);
 
   useEffect(() => {
+    setAccessNotice(new URLSearchParams(window.location.search).get("notice") === "admin-only");
     void load();
     const refresh = () => void load();
     window.addEventListener(APPOINTMENTS_CHANGED_EVENT, refresh);
@@ -60,6 +62,7 @@ export function CustomerDashboardOverview() {
   ];
 
   return <div className="mx-auto max-w-7xl space-y-9">
+    {accessNotice && <p role="status" className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">Admin access is restricted to administrator accounts. You are viewing your customer dashboard.</p>}
     <section className="flex flex-col gap-5 rounded-3xl border border-[var(--border)] bg-[radial-gradient(circle_at_92%_4%,rgb(22_163_74_/_16%),transparent_35%),var(--surface)] p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
       <div><p className="text-xs font-semibold uppercase tracking-[.18em] text-[var(--green-light)]">Customer dashboard</p><h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Welcome back{user?.name ? `, ${user.name.split(/\s+/)[0]}` : ""}!</h1><p className="mt-3 max-w-2xl leading-6 text-[var(--muted)]">Manage your salon appointments and keep track of your bookings.</p></div>
       <Link href="/services" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-5 font-semibold text-white transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]">Book new appointment<ArrowRight className="size-4" aria-hidden="true" /></Link>

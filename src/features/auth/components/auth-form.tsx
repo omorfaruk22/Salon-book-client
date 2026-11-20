@@ -73,7 +73,8 @@ function LoginForm() {
       const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
       const destination = profileResult.user.role === "admin"
         ? safeNext?.startsWith("/admin") ? safeNext : "/admin"
-        : safeNext && !safeNext.startsWith("/admin") ? safeNext : "/dashboard";
+        : safeNext?.startsWith("/admin") ? "/dashboard?notice=admin-only"
+          : safeNext ?? "/dashboard";
       router.replace(destination);
       router.refresh();
     } catch (cause) {
