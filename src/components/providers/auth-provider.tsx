@@ -16,18 +16,47 @@ type AuthContextValue = {
 type ProfileResult = { user: SalonUser; error?: never } | { user?: never; error: { message: string; status?: number } };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const MAX_SESSION_RETRIES = 2;
+
+function getErrorStatus(error: unknown) {
+  if (typeof error !== "object" || error === null) return undefined;
+  const status = "status" in error ? error.status : "statusCode" in error ? error.statusCode : undefined;
+  return typeof status === "number" ? status : undefined;
+}
 
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const sessionState = authClient.useSession();
+  const { error: sessionError, isPending: sessionPending, isRefetching: sessionRefetching, refetch: refetchSession } = sessionState;
   const sessionUserId = sessionState.data?.user.id;
   const sessionAvatarUrl = sessionState.data?.user.image ?? null;
   const [user, setUser] = useState<SalonUser | null>(null);
   const avatarUrl = user?.imageUrl ?? sessionAvatarUrl;
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<AuthContextValue["profileError"]>(null);
+  const [sessionRetryCount, setSessionRetryCount] = useState(0);
+  const [sessionRetrying, setSessionRetrying] = useState(false);
   const profileRequest = useRef<{ userId: string; promise: Promise<ProfileResult>; token: object } | null>(null);
   const currentSessionUserId = useRef(sessionUserId);
   currentSessionUserId.current = sessionUserId;
+
+  const sessionErrorStatus = getErrorStatus(sessionError);
+  const hasTransientSessionError = Boolean(sessionError) && sessionErrorStatus !== 401;
+
+  useEffect(() => {
+    if (!sessionError || sessionPending || sessionRefetching || sessionRetrying || sessionUserId || sessionErrorStatus === 401) {
+      if (!sessionError || sessionUserId) setSessionRetryCount(0);
+      return;
+    }
+    if (sessionRetryCount >= MAX_SESSION_RETRIES) return;
+
+    const retryTimer = window.setTimeout(() => {
+      setSessionRetryCount((count) => count + 1);
+      setSessionRetrying(true);
+      void refetchSession().catch(() => undefined).finally(() => setSessionRetrying(false));
+    }, 500 * (sessionRetryCount + 1));
+
+    return () => window.clearTimeout(retryTimer);
+  }, [sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, refetchSession, sessionRetrying, sessionUserId]);
 
   const refreshProfile = useCallback((requestedUserId?: string, force = false) => {
     const requestedId = requestedUserId ?? sessionUserId;
@@ -72,24 +101,36 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   }, [sessionUserId]);
 
   useEffect(() => {
-    if (sessionState.isPending) return;
+    if (sessionPending || sessionRefetching || sessionRetrying) return;
     if (!sessionUserId) {
       profileRequest.current = null;
       setUser(null);
-      setProfileError(null);
       setProfileLoading(false);
+      if (sessionError) {
+        if (sessionErrorStatus === 401) {
+          setProfileError({ message: "Your session has expired. Please sign in again.", status: 401 });
+        } else if (sessionRetryCount >= MAX_SESSION_RETRIES) {
+          setProfileError({ message: "Could not verify your session because the server is temporarily unavailable. Refresh the page in a moment.", status: sessionErrorStatus });
+        } else {
+          setProfileError(null);
+        }
+        return;
+      }
+      setProfileError(null);
+      setSessionRetryCount(0);
       return;
     }
+    setSessionRetryCount(0);
     void refreshProfile();
-  }, [refreshProfile, sessionState.isPending, sessionUserId]);
+  }, [refreshProfile, sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, sessionRetrying, sessionUserId]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     avatarUrl,
-    isLoading: sessionState.isPending || (!!sessionUserId && profileLoading),
+    isLoading: sessionPending || sessionRefetching || sessionRetrying || (hasTransientSessionError && sessionRetryCount < MAX_SESSION_RETRIES) || (!!sessionUserId && profileLoading),
     profileError,
     refreshProfile,
-  }), [user, avatarUrl, sessionState.isPending, sessionUserId, profileLoading, profileError, refreshProfile]);
+  }), [user, avatarUrl, sessionPending, sessionRefetching, sessionRetrying, hasTransientSessionError, sessionRetryCount, sessionUserId, profileLoading, profileError, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
