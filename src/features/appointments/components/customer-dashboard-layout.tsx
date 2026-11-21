@@ -15,6 +15,8 @@ const navigation = [
   { href: "/dashboard/profile", label: "My Profile", icon: UserRound },
 ];
 
+const backToServicesClass = "flex min-h-12 w-full items-center gap-3 rounded-xl border border-[var(--green-light)]/25 bg-[var(--primary)]/10 px-3 text-sm font-semibold text-[var(--green-light)] transition-colors hover:border-[var(--green-light)]/50 hover:bg-[var(--primary)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]";
+
 export function CustomerDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -47,7 +49,7 @@ export function CustomerDashboardLayout({ children }: { children: React.ReactNod
         {navigation.map((item) => <DashboardNavLink key={item.href} href={item.href} label={item.label} Icon={item.icon} active={isActive(pathname, item.href)} />)}
       </nav>
       <div className="mt-auto space-y-1 border-t border-[var(--border)] pt-4">
-        <Link href="/services" className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-[var(--muted)] transition hover:bg-[var(--card)] hover:text-white"><ArrowLeft className="size-4" aria-hidden="true" />Back to website</Link>
+        <Link href="/services" className={backToServicesClass}><ArrowLeft className="size-4 shrink-0" aria-hidden="true" />Back to Services</Link>
         <SignOutButton onClick={() => void signOut()} disabled={signingOut} />
       </div>
     </aside>
@@ -60,7 +62,7 @@ export function CustomerDashboardLayout({ children }: { children: React.ReactNod
       {mobileOpen && <div id="customer-dashboard-mobile-nav" className="fixed inset-x-0 top-16 z-40 border-b border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl md:hidden">
         <ProfileSummary image={profileImage} initials={initials} name={user?.name ?? "Customer"} email={user?.email ?? ""} compact />
         <nav aria-label="Customer dashboard mobile" className="mt-4 space-y-1">{navigation.map((item) => <DashboardNavLink key={item.href} href={item.href} label={item.label} Icon={item.icon} active={isActive(pathname, item.href)} onClick={() => setMobileOpen(false)} />)}</nav>
-        <div className="mt-3 border-t border-[var(--border)] pt-3"><Link href="/services" onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-[var(--muted)] hover:text-white"><ArrowLeft className="size-4" aria-hidden="true" />Back to website</Link><SignOutButton onClick={() => void signOut()} disabled={signingOut} /></div>
+        <div className="mt-3 border-t border-[var(--border)] pt-3"><Link href="/services" onClick={() => setMobileOpen(false)} className={backToServicesClass}><ArrowLeft className="size-4 shrink-0" aria-hidden="true" />Back to Services</Link><SignOutButton onClick={() => void signOut()} disabled={signingOut} /></div>
       </div>}
       <main className="min-h-[calc(100vh-4rem)] px-4 py-7 sm:px-6 sm:py-10 lg:px-10">{children}</main>
     </div>
