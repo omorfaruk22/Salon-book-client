@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Facebook, Instagram, MapPin, Phone, Youtube } from "lucide-react";
+import { Clock3, Facebook, Instagram, MapPin, Phone, Youtube } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { useAuth } from "@/components/providers/auth-provider";
 import { siteConfig } from "@/lib/site-config";
@@ -54,6 +54,7 @@ export function SiteFooter() {
             {siteConfig.contactEmail && <li><a href={`mailto:${siteConfig.contactEmail}`} className="break-all transition-colors hover:text-[var(--green-light)] focus-visible:rounded-sm">{siteConfig.contactEmail}</a></li>}
             {siteConfig.contactPhone && <li className="flex items-start gap-2"><Phone className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><a href={`tel:${siteConfig.contactPhone.replace(/[^\d+]/g, "")}`} className="transition-colors hover:text-[var(--green-light)] focus-visible:rounded-sm">{siteConfig.contactPhone}</a></li>}
             {siteConfig.location && <li className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{siteConfig.location}</span></li>}
+            <li className="flex items-start gap-2"><Clock3 className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span><span className="font-medium text-[var(--foreground)]">Opening hours</span><br />{siteConfig.openingHours}</span></li>
             {!siteConfig.contactEmail && !siteConfig.contactPhone && !siteConfig.location && <li className="leading-6">Contact details will be added when confirmed.</li>}
           </ul>
           <Link href="/contact" className="mt-4 inline-flex min-h-10 items-center text-sm font-medium text-[var(--green-light)] transition-colors hover:text-white focus-visible:rounded-sm">Contact page <span className="sr-only">for more information</span></Link>
@@ -74,7 +75,7 @@ export function SiteFooter() {
 function FooterColumn({ title, links, loading = false }: { title: string; links: { label: string; href: string }[]; loading?: boolean }) {
   return <section aria-label={title}>
     <h2 className="text-sm font-semibold text-[var(--foreground)]">{title}</h2>
-    {loading ? <p className="mt-4 text-sm text-[var(--muted)]" aria-live="polite">Checking account…</p> : <ul className="mt-4 space-y-3">
+    {loading ? <div className="mt-4 min-h-20" aria-hidden="true" /> : <ul className="mt-4 space-y-3">
       {links.map((link) => <li key={`${link.label}-${link.href}`}><Link href={link.href} className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--green-light)] focus-visible:rounded-sm">{link.label}</Link></li>)}
     </ul>}
   </section>;

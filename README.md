@@ -13,7 +13,7 @@ A free Render API instance may take a short time to wake after inactivity.
 
 ### Customers
 - Browse, search, filter, sort, and paginate active services.
-- View service details and request an appointment.
+- Sign in to view protected service details and request an appointment.
 - Track appointment status and cancel eligible pending requests.
 - Pay for confirmed appointments through Stripe Checkout.
 - View payment history and receipts.
@@ -79,6 +79,7 @@ Set these values in .env.local for local development:
 | NEXT_PUBLIC_CONTACT_EMAIL | No | Public business email |
 | NEXT_PUBLIC_CONTACT_PHONE | No | Public business phone |
 | NEXT_PUBLIC_SALON_LOCATION | No | Public salon location |
+| NEXT_PUBLIC_SALON_OPENING_HOURS | No | Public opening-hours text, e.g. `8:00 AM-10:00 PM` |
 | NEXT_PUBLIC_FACEBOOK_URL | No | Official Facebook URL |
 | NEXT_PUBLIC_INSTAGRAM_URL | No | Official Instagram URL |
 | NEXT_PUBLIC_YOUTUBE_URL | No | Official YouTube URL |

@@ -9,9 +9,10 @@ function publicUrl(value: string | undefined) {
 }
 
 export const siteConfig = {
-  contactEmail: validEmail(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
-  contactPhone: validPhone(process.env.NEXT_PUBLIC_CONTACT_PHONE),
-  location: process.env.NEXT_PUBLIC_SALON_LOCATION?.trim() || undefined,
+  contactEmail: validEmail(process.env.NEXT_PUBLIC_CONTACT_EMAIL) || "omorfaruk22571@gmail.com",
+  contactPhone: validPhone(process.env.NEXT_PUBLIC_CONTACT_PHONE) || "01776664368",
+  location: process.env.NEXT_PUBLIC_SALON_LOCATION?.trim() || "Cox's Bazar, Bangladesh",
+  openingHours: process.env.NEXT_PUBLIC_SALON_OPENING_HOURS?.trim() || "8:00 AM–10:00 PM",
   socials: [
     { name: "Facebook", href: publicUrl(process.env.NEXT_PUBLIC_FACEBOOK_URL) },
     { name: "Instagram", href: publicUrl(process.env.NEXT_PUBLIC_INSTAGRAM_URL) },
