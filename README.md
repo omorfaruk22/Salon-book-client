@@ -103,7 +103,17 @@ On Windows, the build script uses a separate .next-windows output directory to a
 
 ## Authentication
 
-Email registration and sign-in use Better Auth through /api/auth. Google OAuth works only when both Google credentials and the matching callback URL are configured on the API. The client never allows a public user to choose the Admin role.
+Email registration and sign-in use Better Auth through /api/auth. Google OAuth is supported and is enabled only after both Google credentials are configured in the API host environment.
+
+To enable Google sign-in for production:
+
+1. In Google Cloud Console, create an OAuth client with application type **Web application**.
+2. Add `https://salon-book-client-8wvq.vercel.app` as an authorized JavaScript origin.
+3. Add `https://salon-book-client-8wvq.vercel.app/api/auth/callback/google` as an authorized redirect URI. For local testing, also add origin `http://localhost:3000` and redirect URI `http://localhost:3000/api/auth/callback/google`.
+4. In the Render dashboard, open the `salonbook-server` web service → **Environment** and add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` using the values from Google Cloud. Keep the secret only on Render; never add it to Vercel, `.env` in Git, or chat.
+5. Save the Render environment changes and wait for the server to redeploy. Then try **Continue with Google** on the deployed sign-in page.
+
+The client proxies `/api/auth` through its own origin, so Google redirects back to the Vercel client URL above. Public registration still creates customer accounts only; Admin role is provisioned on the server.
 
 ## Related repository
 

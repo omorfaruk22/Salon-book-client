@@ -195,6 +195,7 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
       });
       if (result.error) onError(authErrorMessage(result.error, "google"));
       else if (result.data?.url) window.location.assign(result.data.url);
+      else onError("Google sign-in is not configured yet. Please contact the site administrator or use email and password.");
     } catch (cause) {
       onError(cause instanceof Error ? authErrorMessage({ message: cause.message }, "google") : "Google sign-in could not be completed. Try email and password instead.");
     } finally {
