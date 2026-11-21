@@ -153,7 +153,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     avatarUrl,
-    isLoading: sessionPending || sessionRefetching || sessionRetrying || hasSessionErrorToRetry || (!!sessionUserId && profileLoading),
+    // Once Better Auth has restored a session, keep protected routes in their
+    // loading state until the matching SalonBook profile has been fetched.
+    // Without this, there is a brief render where sessionUserId exists but
+    // user is still null, and the OAuth callback can misread it as a failure.
+    isLoading: sessionPending || sessionRefetching || sessionRetrying || hasSessionErrorToRetry || (!!sessionUserId && !profileError && (!user || profileLoading)),
     profileError,
     refreshSession,
     refreshProfile,
