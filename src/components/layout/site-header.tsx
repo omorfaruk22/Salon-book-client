@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, CircleUserRound, Menu, Scissors, X } from "lucide-react";
+import { ChevronDown, CircleUserRound, LayoutDashboard, Menu, Scissors, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -114,6 +114,7 @@ export function SiteHeader() {
 
   const dashboardHref = user?.role === "admin" ? "/admin" : "/dashboard";
   const dashboardLabel = user?.role === "admin" ? "Admin dashboard" : "Customer dashboard";
+  const dashboardActive = pathname === dashboardHref || pathname.startsWith(`${dashboardHref}/`);
 
   return <header className={`sticky top-0 z-50 border-b bg-[var(--background)]/95 backdrop-blur-xl transition-[border-color,background-color] duration-200 motion-reduce:transition-none ${scrolled ? "border-[var(--green-light)]/20" : "border-[var(--border)]"}`}>
     <div className="mx-auto flex min-h-[4.25rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -132,7 +133,10 @@ export function SiteHeader() {
       <div className="hidden shrink-0 items-center gap-2 lg:flex">
         {authLoading ? <span aria-label="Checking your account" className="size-10 animate-pulse rounded-full bg-[var(--surface)]" /> : user ? <div className="relative" ref={accountRef}>
           <div className="flex items-center gap-2">
-            <Link href={dashboardHref} className="rounded-full px-4 py-2.5 text-sm font-medium text-[var(--muted)] transition-colors hover:text-white focus-visible:rounded-full">{dashboardLabel}</Link>
+            <Link href={dashboardHref} aria-current={dashboardActive ? "page" : undefined} className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:-translate-y-px hover:shadow-[0_8px_22px_rgb(22_163_74_/_18%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transform-none motion-reduce:transition-none ${dashboardActive ? "border-[var(--green-light)]/50 bg-[var(--primary)] text-white" : "border-[var(--green-light)]/25 bg-[var(--primary)]/10 text-[var(--green-light)] hover:border-[var(--green-light)]/50 hover:bg-[var(--primary)]/20"}`}>
+              <LayoutDashboard className="size-4 shrink-0 transition-transform group-hover:scale-105 motion-reduce:transition-none" aria-hidden="true" />
+              {dashboardLabel}
+            </Link>
             <button ref={accountButtonRef} type="button" aria-haspopup="menu" aria-expanded={accountOpen} aria-controls="account-menu" onClick={() => setAccountOpen((open) => !open)} className="flex min-h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-3 text-left transition-colors hover:border-[var(--green-light)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]">
               <Avatar name={user.name} imageUrl={avatarUrl} />
               <span className="max-w-32 truncate text-sm font-medium">{user.name}</span>
