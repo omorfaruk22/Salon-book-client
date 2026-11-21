@@ -41,6 +41,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const [sessionRetryCount, setSessionRetryCount] = useState(0);
   const [sessionRetrying, setSessionRetrying] = useState(false);
   const profileRequest = useRef<{ userId: string; promise: Promise<ProfileResult>; token: object } | null>(null);
+  const profileLoadedForUser = useRef<string | null>(null);
   const currentSessionUserId = useRef(sessionUserId);
   currentSessionUserId.current = sessionUserId;
 
@@ -97,7 +98,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         if (!response.ok) {
           throw Object.assign(new Error(result.error?.message ?? "Could not load your account."), { status: response.status });
         }
-        if (currentSessionUserId.current === requestedId) setUser(result.data);
+        if (currentSessionUserId.current === requestedId) {
+          profileLoadedForUser.current = requestedId;
+          setUser(result.data);
+        }
         return { user: result.data };
       } catch (cause) {
         const failure = {
@@ -105,6 +109,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
           status: typeof cause === "object" && cause !== null && "status" in cause ? Number((cause as { status: unknown }).status) : undefined,
         };
         if (currentSessionUserId.current === requestedId) {
+          profileLoadedForUser.current = null;
           setUser(null);
           setProfileError(failure);
         }
@@ -126,6 +131,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     if (sessionPending || sessionRefetching || sessionRetrying) return;
     if (!sessionUserId) {
       profileRequest.current = null;
+      profileLoadedForUser.current = null;
       setUser(null);
       setProfileLoading(false);
       if (sessionError) {
@@ -147,6 +153,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       return;
     }
     setSessionRetryCount(0);
+    // A visibility-triggered session recheck keeps the same authenticated user.
+    // The profile is already in memory, so avoid another /users/me round trip.
+    if (profileLoadedForUser.current === sessionUserId) return;
     void refreshProfile();
   }, [refreshProfile, sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, sessionRetrying, sessionUserId]);
 
@@ -157,11 +166,14 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     // loading state until the matching SalonBook profile has been fetched.
     // Without this, there is a brief render where sessionUserId exists but
     // user is still null, and the OAuth callback can misread it as a failure.
-    isLoading: sessionPending || sessionRefetching || sessionRetrying || hasSessionErrorToRetry || (!!sessionUserId && !profileError && (!user || profileLoading)),
+    // Keep the current dashboard visible while Better Auth quietly revalidates
+    // a session after a tab becomes active. Initial loads and account changes
+    // still wait until the matching app profile is ready.
+    isLoading: sessionPending || sessionRetrying || hasSessionErrorToRetry || (!sessionUserId && !!user) || (!!sessionUserId && !profileError && (!user || profileLoadedForUser.current !== sessionUserId || profileLoading)),
     profileError,
     refreshSession,
     refreshProfile,
-  }), [user, avatarUrl, sessionPending, sessionRefetching, sessionRetrying, hasSessionErrorToRetry, sessionUserId, profileLoading, profileError, refreshSession, refreshProfile]);
+  }), [user, avatarUrl, sessionPending, sessionRetrying, hasSessionErrorToRetry, sessionUserId, profileLoading, profileError, refreshSession, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
