@@ -122,7 +122,7 @@ export function AdminAppointments() {
     </section>
 
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5" aria-label="Appointment filters">
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_11rem_11rem_13rem]">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <label className="relative min-w-0"><span className="sr-only">Search appointments</span><Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--muted)]" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customer, service, or reference" className="min-w-0 pl-10" /></label>
         <label className="min-w-0"><span className="sr-only">Filter by appointment status</span><Select className="min-w-0" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="all">All statuses</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option><option value="completed">Completed</option></Select></label>
         <label className="min-w-0"><span className="sr-only">Filter by payment status</span><Select className="min-w-0" value={paymentStatus} onChange={(event) => { setPaymentStatus(event.target.value); setPage(1); }}><option value="all">All payments</option><option value="unpaid">Unpaid</option><option value="paid">Paid</option></Select></label>
