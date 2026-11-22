@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { ServiceCard } from "@/components/ui/service-card";
 import { ServiceCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { apiUrl } from "@/lib/api-url";
+import { isTransientHttpStatus, retryTransient } from "@/lib/retry-transient";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 
 type SortOption = "default" | "price-asc" | "price-desc";
@@ -114,7 +115,11 @@ export function ServiceBrowser() {
       if (stateFromUrl.search) params.set("search", stateFromUrl.search);
       if (stateFromUrl.category) params.set("category", stateFromUrl.category);
       try {
-        const response = await fetch(apiUrl(`/services?${params.toString()}`), { signal: controller.signal, cache: "no-store" });
+        const response = await retryTransient(
+          () => fetch(apiUrl(`/services?${params.toString()}`), { signal: controller.signal, cache: "no-store" }),
+          (item) => isTransientHttpStatus(item.status),
+          controller.signal,
+        );
         const result = await response.json().catch(() => null) as BrowseResponse | null;
         if (!response.ok || !result || !Array.isArray(result.data)) throw new Error("The service menu is temporarily unavailable.");
 

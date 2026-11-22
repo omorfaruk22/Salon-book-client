@@ -10,33 +10,56 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ServiceCard } from "@/components/ui/service-card";
 import { ServiceCardSkeleton, Skeleton } from "@/components/ui/skeleton";
-import { apiUrl } from "@/lib/api-url";
+import { apiBaseUrl, apiUrl } from "@/lib/api-url";
+import { isTransientHttpStatus, retryTransient } from "@/lib/retry-transient";
 import type { ApiEnvelope, SalonService } from "@/types/service";
 
 type FeaturedServicesResponse = ApiEnvelope<SalonService[]>;
+type CachedServiceMenu = { services: SalonService[]; categories: string[] };
+const serviceMenuCacheKey = `salonbook:service-menu:v1:${apiBaseUrl}`;
 
 export function FeaturedServicesSection() {
   const [services, setServices] = useState<SalonService[]>([]);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showingSavedServices, setShowingSavedServices] = useState(false);
   const [error, setError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    const cachedMenu = readCachedServiceMenu();
+    if (cachedMenu) {
+      setServices(cachedMenu.services);
+      setApiCategories(cachedMenu.categories);
+      setLoading(false);
+      setShowingSavedServices(true);
+    }
+
     async function loadServices() {
-      setLoading(true);
+      setLoading(!cachedMenu);
       setError("");
       try {
         const query = new URLSearchParams({ page: "1", limit: "48", sort: "name" });
-        const response = await fetch(apiUrl(`/services?${query.toString()}`), { cache: "no-store", signal: controller.signal });
+        const response = await retryTransient(
+          () => fetch(apiUrl(`/services?${query.toString()}`), { cache: "no-store", signal: controller.signal }),
+          (item) => isTransientHttpStatus(item.status),
+          controller.signal,
+        );
         const result = await response.json().catch(() => null) as FeaturedServicesResponse | null;
         if (!response.ok || !result || !Array.isArray(result.data)) {
           throw new Error("We couldn't load the salon's services. Please try again.");
         }
-        setServices(result.data.filter((service) => service.isActive));
+        const activeServices = result.data.filter((service) => service.isActive);
         const categories = result.meta?.categories?.filter((category) => typeof category === "string" && category.trim()) ?? [];
+        setServices(activeServices);
         setApiCategories(categories);
+        setShowingSavedServices(false);
+        try {
+          window.localStorage.setItem(serviceMenuCacheKey, JSON.stringify({ services: activeServices, categories } satisfies CachedServiceMenu));
+        } catch {
+          // Keep the live service list usable when browser storage is unavailable.
+        }
       } catch {
         if (!controller.signal.aborted) setError("The service list is temporarily unavailable. Please retry in a moment.");
       } finally {
@@ -65,7 +88,10 @@ export function FeaturedServicesSection() {
           <SectionHeading headingLevel="h2" headingId="featured-services-title" eyebrow="The service menu" title="Explore Our Premium Services" description="Discover services designed to help you look and feel your best." />
           <Link href="/services" className="inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-semibold text-[var(--green-light)] transition-colors hover:text-white focus-visible:rounded-md">Browse all services<ArrowRight className="size-4" aria-hidden="true" /></Link>
         </div>
-        {error ? <ErrorState className="mt-8" description={error} onRetry={() => setRetryCount((count) => count + 1)} /> : loading ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading featured salon services" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <ServiceCardSkeleton key={index} />)}</div> : services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.slice(0, 6).map((service) => <ServiceCard key={service._id} service={service} />)}</div> : <div className="mt-8"><EmptyState icon={<Scissors className="size-5" />} title="No active services yet" description="The salon’s service list will appear here when services are available." /></div>}
+        {error && !services.length ? <ErrorState className="mt-8" description={error} onRetry={() => setRetryCount((count) => count + 1)} /> : loading && !services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading featured salon services" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <ServiceCardSkeleton key={index} />)}</div> : services.length ? <>
+          {showingSavedServices && <p role="status" className="mt-6 rounded-xl border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-100">Showing the last saved service list while we reconnect. Prices and availability may be outdated.</p>}
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.slice(0, 6).map((service) => <ServiceCard key={service._id} service={service} />)}</div>
+        </> : <div className="mt-8"><EmptyState icon={<Scissors className="size-5" />} title="No active services yet" description="The salon’s service list will appear here when services are available." /></div>}
       </Container>
     </section>
 
@@ -89,4 +115,32 @@ function CategoryIcon({ category }: { category: string }) {
 
 function titleCase(value: string) {
   return value.replace(/\b\w/g, (letter) => letter.toLocaleUpperCase());
+}
+
+function readCachedServiceMenu(): CachedServiceMenu | null {
+  try {
+    const cached = window.localStorage.getItem(serviceMenuCacheKey);
+    if (!cached) return null;
+    const parsed: unknown = JSON.parse(cached);
+    if (!parsed || typeof parsed !== "object" || !("services" in parsed) || !("categories" in parsed)) return null;
+    const candidate = parsed as { services: unknown; categories: unknown };
+    if (!Array.isArray(candidate.services) || !Array.isArray(candidate.categories)) return null;
+    const services = candidate.services.filter(isCachedService);
+    const categories = candidate.categories.filter((category): category is string => typeof category === "string" && Boolean(category.trim()));
+    return { services, categories };
+  } catch {
+    return null;
+  }
+}
+
+function isCachedService(value: unknown): value is SalonService {
+  if (!value || typeof value !== "object") return false;
+  const service = value as Record<string, unknown>;
+  return typeof service._id === "string"
+    && typeof service.name === "string"
+    && typeof service.description === "string"
+    && typeof service.category === "string"
+    && typeof service.durationMinutes === "number"
+    && typeof service.price === "number"
+    && typeof service.isActive === "boolean";
 }

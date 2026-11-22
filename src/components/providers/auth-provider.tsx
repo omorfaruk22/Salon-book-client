@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api-client";
+import { isTransientHttpStatus } from "@/lib/retry-transient";
 import type { SalonUser } from "@/types/appointment";
 import type { ApiEnvelope } from "@/types/service";
 
@@ -17,7 +18,7 @@ type AuthContextValue = {
 type ProfileResult = { user: SalonUser; error?: never } | { user?: never; error: { message: string; status?: number } };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const MAX_SESSION_RETRIES = 2;
+const MAX_SESSION_RETRIES = 8;
 
 function getErrorStatus(error: unknown) {
   if (typeof error !== "object" || error === null) return undefined;
@@ -46,23 +47,25 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   currentSessionUserId.current = sessionUserId;
 
   const sessionErrorStatus = getErrorStatus(sessionError);
-  const hasSessionErrorToRetry = Boolean(sessionError) && sessionRetryCount < MAX_SESSION_RETRIES;
+  const transientSessionError = Boolean(sessionError) && (sessionErrorStatus === undefined || isTransientHttpStatus(sessionErrorStatus));
+  const hasSessionErrorToRetry = transientSessionError && sessionRetryCount < MAX_SESSION_RETRIES;
+  const hasCachedProfile = Boolean(user && profileLoadedForUser.current === user.id);
 
   useEffect(() => {
     if (!sessionError || sessionPending || sessionRefetching || sessionRetrying || sessionUserId) {
       if (!sessionError || sessionUserId) setSessionRetryCount(0);
       return;
     }
-    if (sessionRetryCount >= MAX_SESSION_RETRIES) return;
+    if (!hasSessionErrorToRetry) return;
 
     const retryTimer = window.setTimeout(() => {
       setSessionRetryCount((count) => count + 1);
       setSessionRetrying(true);
       void refetchSession().catch(() => undefined).finally(() => setSessionRetrying(false));
-    }, 500 * (sessionRetryCount + 1));
+    }, Math.min(1_000 * 2 ** sessionRetryCount, 10_000));
 
     return () => window.clearTimeout(retryTimer);
-  }, [sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, refetchSession, sessionRetrying, sessionUserId]);
+  }, [hasSessionErrorToRetry, sessionRetryCount, sessionError, sessionPending, sessionRefetching, refetchSession, sessionRetrying, sessionUserId]);
 
   const refreshProfile = useCallback((requestedUserId?: string, force = false) => {
     const requestedId = requestedUserId ?? sessionUserId;
@@ -109,9 +112,12 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
           status: typeof cause === "object" && cause !== null && "status" in cause ? Number((cause as { status: unknown }).status) : undefined,
         };
         if (currentSessionUserId.current === requestedId) {
-          profileLoadedForUser.current = null;
-          setUser(null);
-          setProfileError(failure);
+          const keepCachedProfile = profileLoadedForUser.current === requestedId && failure.status !== 401 && failure.status !== 403;
+          if (!keepCachedProfile) {
+            profileLoadedForUser.current = null;
+            setUser(null);
+          }
+          setProfileError(keepCachedProfile ? null : failure);
         }
         return { error: failure };
       } finally {
@@ -130,17 +136,25 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   useEffect(() => {
     if (sessionPending || sessionRefetching || sessionRetrying) return;
     if (!sessionUserId) {
-      profileRequest.current = null;
-      profileLoadedForUser.current = null;
-      setUser(null);
-      setProfileLoading(false);
       if (sessionError) {
-        if (sessionRetryCount < MAX_SESSION_RETRIES) {
+        if (hasSessionErrorToRetry) {
           setProfileError(null);
           return;
         }
         if (sessionErrorStatus === 401) {
+          profileRequest.current = null;
+          profileLoadedForUser.current = null;
+          setUser(null);
+          setProfileLoading(false);
           setProfileError({ message: "Your session has expired. Please sign in again.", status: 401 });
+        } else if (sessionErrorStatus === 403) {
+          profileRequest.current = null;
+          profileLoadedForUser.current = null;
+          setUser(null);
+          setProfileLoading(false);
+          setProfileError({ message: "Your account cannot access this application.", status: 403 });
+        } else if (transientSessionError && hasCachedProfile) {
+          setProfileError(null);
         } else if (sessionRetryCount >= MAX_SESSION_RETRIES) {
           setProfileError({ message: "Could not verify your session because the server is temporarily unavailable. Refresh the page in a moment.", status: sessionErrorStatus });
         } else {
@@ -148,6 +162,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         }
         return;
       }
+      profileRequest.current = null;
+      profileLoadedForUser.current = null;
+      setUser(null);
+      setProfileLoading(false);
       setProfileError(null);
       setSessionRetryCount(0);
       return;
@@ -157,7 +175,23 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     // The profile is already in memory, so avoid another /users/me round trip.
     if (profileLoadedForUser.current === sessionUserId) return;
     void refreshProfile();
-  }, [refreshProfile, sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, sessionRetrying, sessionUserId]);
+  }, [hasCachedProfile, hasSessionErrorToRetry, refreshProfile, sessionErrorStatus, sessionRetryCount, sessionError, sessionPending, sessionRefetching, sessionRetrying, sessionUserId, transientSessionError]);
+
+  const keepCachedProfileVisible = hasCachedProfile && (
+    sessionUserId === user?.id
+    || sessionPending
+    || sessionRefetching
+    || sessionRetrying
+    || transientSessionError
+  );
+  const isLoading = !keepCachedProfileVisible && (
+    sessionPending
+    || sessionRefetching
+    || sessionRetrying
+    || hasSessionErrorToRetry
+    || (!sessionUserId && !!user)
+    || (!!sessionUserId && !profileError && (!user || profileLoadedForUser.current !== sessionUserId || profileLoading))
+  );
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
@@ -169,11 +203,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     // Keep the current dashboard visible while Better Auth quietly revalidates
     // a session after a tab becomes active. Initial loads and account changes
     // still wait until the matching app profile is ready.
-    isLoading: sessionPending || sessionRetrying || hasSessionErrorToRetry || (!sessionUserId && !!user) || (!!sessionUserId && !profileError && (!user || profileLoadedForUser.current !== sessionUserId || profileLoading)),
+    isLoading,
     profileError,
     refreshSession,
     refreshProfile,
-  }), [user, avatarUrl, sessionPending, sessionRetrying, hasSessionErrorToRetry, sessionUserId, profileLoading, profileError, refreshSession, refreshProfile]);
+  }), [user, avatarUrl, isLoading, profileError, refreshSession, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
