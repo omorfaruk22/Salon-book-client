@@ -19,6 +19,7 @@ type ProfileResult = { user: SalonUser; error?: never } | { user?: never; error:
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const MAX_SESSION_RETRIES = 8;
+const API_KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1_000;
 
 function getErrorStatus(error: unknown) {
   if (typeof error !== "object" || error === null) return undefined;
@@ -45,6 +46,33 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const profileLoadedForUser = useRef<string | null>(null);
   const currentSessionUserId = useRef(sessionUserId);
   currentSessionUserId.current = sessionUserId;
+
+  useEffect(() => {
+    let lastPingAt = Date.now();
+    let pingInFlight = false;
+
+    const pingApi = () => {
+      if (pingInFlight) return;
+      pingInFlight = true;
+      lastPingAt = Date.now();
+      void fetch("/api/health", { cache: "no-store", credentials: "same-origin" })
+        .catch(() => undefined)
+        .finally(() => { pingInFlight = false; });
+    };
+
+    const interval = window.setInterval(pingApi, API_KEEP_ALIVE_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastPingAt >= API_KEEP_ALIVE_INTERVAL_MS) {
+        pingApi();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   const sessionErrorStatus = getErrorStatus(sessionError);
   const transientSessionError = Boolean(sessionError) && (sessionErrorStatus === undefined || isTransientHttpStatus(sessionErrorStatus));
