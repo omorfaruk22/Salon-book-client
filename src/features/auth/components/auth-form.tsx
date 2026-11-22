@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/providers/auth-provider";
 import { authClient } from "@/lib/auth-client";
+import { isTransientHttpStatus, retryTransient } from "@/lib/retry-transient";
 
 type AuthFormProps = { mode: "login" | "register" };
 
@@ -35,7 +36,8 @@ const registrationSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 type RegistrationValues = z.infer<typeof registrationSchema>;
-type AuthError = { message?: string; code?: string | null; status?: number };
+type AuthError = { message?: string; code?: string | null; status?: number; statusCode?: number };
+const authRetryDelays = [3_000, 7_000, 12_000, 15_000, 20_000] as const;
 
 export function AuthForm({ mode }: AuthFormProps) {
   return mode === "register" ? <RegistrationForm /> : <LoginForm />;
@@ -57,7 +59,10 @@ function LoginForm() {
   async function submit(values: LoginValues) {
     setError("");
     try {
-      const result = await authClient.signIn.email({ email: values.email, password: values.password });
+      const result = await retryAuthRequest(
+        () => authClient.signIn.email({ email: values.email, password: values.password }),
+        (response) => response.error,
+      );
       if (result.error) { setError(authErrorMessage(result.error, "login")); return; }
 
       const profileResult = await refreshProfile(result.data.user.id);
@@ -78,7 +83,7 @@ function LoginForm() {
       router.replace(destination);
       router.refresh();
     } catch (cause) {
-      setError(authErrorMessage({ message: cause instanceof Error ? cause.message : "" }, "login"));
+      setError(authErrorMessage(readAuthError(cause), "login"));
     }
   }
 
@@ -126,7 +131,7 @@ function RegistrationForm() {
       router.replace("/dashboard");
       router.refresh();
     } catch (cause) {
-      setError(authErrorMessage({ message: cause instanceof Error ? cause.message : "" }, "register"));
+      setError(authErrorMessage(readAuthError(cause), "register"));
     }
   }
 
@@ -229,20 +234,63 @@ function isAdminPath(value: string) {
   return value === "/admin" || value.startsWith("/admin/");
 }
 
+function retryAuthRequest<T>(operation: () => Promise<T>, getError: (result: T) => AuthError | null | undefined) {
+  const shouldRetry = (error: AuthError | null | undefined) => {
+    if (!error) return false;
+    const status = authErrorStatus(error);
+    if (status === 429) return false;
+    if (status !== undefined) return status === 0 || isTransientHttpStatus(status);
+    return /failed to fetch|network error|networkerror|load failed|bad gateway|service unavailable|temporarily unavailable|unexpected token|doctype/i.test(error.message ?? "");
+  };
+
+  return retryTransient(async () => {
+    try {
+      return await operation();
+    } catch (cause) {
+      const failure = readAuthError(cause);
+      if (!shouldRetry(failure)) throw cause;
+      const retryableError = cause instanceof Error ? cause : new Error(failure.message || "Authentication service unavailable.");
+      throw Object.assign(retryableError, { status: authErrorStatus(failure) || 503 });
+    }
+  }, (result) => shouldRetry(getError(result)), undefined, {
+    delays: authRetryDelays,
+    shouldRetryError: (cause) => shouldRetry(readAuthError(cause)),
+  });
+}
+
+function readAuthError(error: unknown): AuthError {
+  if (!error || typeof error !== "object") return { message: error instanceof Error ? error.message : "" };
+  const value = error as Record<string, unknown>;
+  return {
+    message: typeof value.message === "string" ? value.message : "",
+    code: typeof value.code === "string" ? value.code : null,
+    ...(typeof value.status === "number" ? { status: value.status } : {}),
+    ...(typeof value.statusCode === "number" ? { statusCode: value.statusCode } : {}),
+  };
+}
+
+function authErrorStatus(error: AuthError) {
+  return error.status ?? error.statusCode;
+}
+
 function authErrorMessage(error: AuthError, kind: "login" | "register" | "google") {
   const code = (error.code ?? "").toUpperCase();
   const message = (error.message ?? "").toLowerCase();
-  if (kind === "register" && (error.status === 409 || code.includes("EXISTS") || message.includes("already exists") || message.includes("already registered"))) {
+  const status = authErrorStatus(error);
+  if (kind === "register" && (status === 409 || code.includes("EXISTS") || message.includes("already exists") || message.includes("already registered"))) {
     return "An account with this email already exists. Sign in instead.";
   }
-  if (kind === "login" && (error.status === 401 || code.includes("INVALID_EMAIL_OR_PASSWORD") || message.includes("invalid email or password"))) {
+  if (status === 429 || message.includes("too many sign-in attempts")) return "Too many sign-in attempts. Wait 15 minutes and try again.";
+  if (kind === "login" && (status === 401 || code.includes("INVALID_EMAIL_OR_PASSWORD") || message.includes("invalid email or password"))) {
     return "Email or password is incorrect.";
   }
   if (kind === "google" && (message.includes("not enabled") || message.includes("not configured") || code.includes("PROVIDER_NOT_FOUND"))) {
     return "Google sign-in is not configured yet. Sign in with email and password instead.";
   }
   if (message.includes("origin") || message.includes("trusted")) return "This site is not authorized for sign-in. Please contact the site administrator.";
-  if (error.status && error.status >= 500) return "SalonBook is temporarily unavailable. Please try again in a moment.";
+  if (status && status >= 500 || /failed to fetch|network error|networkerror|load failed|bad gateway|service unavailable|temporarily unavailable|unexpected token|doctype/i.test(message)) {
+    return "SalonBook is waking up or temporarily unavailable. Wait a moment, then try again.";
+  }
   if (kind === "google") return "Google sign-in was cancelled or could not be completed. Try again or use email and password.";
   return kind === "register" ? "We could not create the account. Check your details and try again." : "We could not sign you in. Check your details and try again.";
 }

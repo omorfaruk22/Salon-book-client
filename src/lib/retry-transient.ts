@@ -1,4 +1,8 @@
 const retryDelays = [1_000, 2_000, 4_000, 8_000, 10_000, 10_000, 10_000, 10_000] as const;
+type RetryTransientOptions = {
+  delays?: readonly number[];
+  shouldRetryError?: (error: unknown) => boolean;
+};
 
 export function isTransientHttpStatus(status: number) {
   return [408, 425, 429, 500, 502, 503, 504].includes(status);
@@ -8,22 +12,24 @@ export async function retryTransient<T>(
   operation: () => Promise<T>,
   shouldRetryResult: (result: T) => boolean,
   signal?: AbortSignal,
+  options: RetryTransientOptions = {},
 ): Promise<T> {
+  const delays = options.delays ?? retryDelays;
   for (let attempt = 0; ; attempt += 1) {
     if (signal?.aborted) throw signal.reason ?? createAbortError();
 
     try {
       const result = await operation();
-      if (!shouldRetryResult(result) || attempt >= retryDelays.length) return result;
+      if (!shouldRetryResult(result) || attempt >= delays.length) return result;
       if (typeof Response !== "undefined" && result instanceof Response) {
         void result.body?.cancel().catch(() => undefined);
       }
     } catch (error) {
       if (signal?.aborted) throw error;
-      if (attempt >= retryDelays.length || !isTransientError(error)) throw error;
+      if (attempt >= delays.length || !(options.shouldRetryError?.(error) ?? isTransientError(error))) throw error;
     }
 
-    await waitForRetry(retryDelays[attempt], signal);
+    await waitForRetry(delays[attempt], signal);
   }
 }
 
