@@ -131,7 +131,10 @@ export function SiteHeader() {
       </nav>
 
       <div className="hidden shrink-0 items-center gap-2 lg:flex">
-        {authLoading ? <span aria-label="Checking your account" className="size-10 animate-pulse rounded-full bg-[var(--surface)]" /> : user ? <div className="relative" ref={accountRef}>
+        {authLoading ? <div className="flex items-center gap-2">
+          <Link href="/sign-in" aria-label="Sign in to your SalonBook account" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-medium text-[var(--muted)] transition-colors hover:border-[var(--green-light)]/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]"><CircleUserRound className="size-4" aria-hidden="true" />Sign in</Link>
+          <Link href="/sign-up" className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] focus-visible:rounded-full">Get started</Link>
+        </div> : user ? <div className="relative" ref={accountRef}>
           <div className="flex items-center gap-2">
             <Link href={dashboardHref} aria-current={dashboardActive ? "page" : undefined} className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:-translate-y-px hover:shadow-[0_8px_22px_rgb(22_163_74_/_18%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transform-none motion-reduce:transition-none ${dashboardActive ? "border-[var(--green-light)]/50 bg-[var(--primary)] text-white" : "border-[var(--green-light)]/25 bg-[var(--primary)]/10 text-[var(--green-light)] hover:border-[var(--green-light)]/50 hover:bg-[var(--primary)]/20"}`}>
               <LayoutDashboard className="size-4 shrink-0 transition-transform group-hover:scale-105 motion-reduce:transition-none" aria-hidden="true" />
@@ -178,7 +181,10 @@ export function SiteHeader() {
             <NavLink href="/contact" active={pathname === "/contact"} onClick={() => setMenuOpen(false)}>Contact</NavLink>
           </nav>
           <div className="mx-auto mt-4 max-w-7xl border-t border-[var(--border)] pt-4">
-            {authLoading ? <div className="h-11 animate-pulse rounded-xl bg-[var(--surface)]" aria-label="Checking your account" /> : user ? <div className="space-y-3">
+            {authLoading ? <div className="grid grid-cols-2 gap-2">
+              <Link href="/sign-in" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border)] px-4 text-sm font-medium text-[var(--muted)] transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]"><CircleUserRound className="size-4" aria-hidden="true" />Sign in</Link>
+              <Link href="/sign-up" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center justify-center rounded-xl bg-[var(--primary)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)]">Get started</Link>
+            </div> : user ? <div className="space-y-3">
               <div className="flex items-center gap-3 px-1">
                 <Avatar name={user.name} imageUrl={avatarUrl} />
                 <div className="min-w-0"><p className="truncate text-sm font-semibold">{user.name}</p><p className="text-xs capitalize text-[var(--muted)]">{user.role ?? "customer"}</p></div>
