@@ -22,7 +22,6 @@ export function FeaturedServicesSection() {
   const [services, setServices] = useState<SalonService[]>([]);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showingSavedServices, setShowingSavedServices] = useState(false);
   const [error, setError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
 
@@ -33,7 +32,6 @@ export function FeaturedServicesSection() {
       setServices(cachedMenu.services);
       setApiCategories(cachedMenu.categories);
       setLoading(false);
-      setShowingSavedServices(true);
     }
 
     async function loadServices() {
@@ -54,7 +52,6 @@ export function FeaturedServicesSection() {
         const categories = result.meta?.categories?.filter((category) => typeof category === "string" && category.trim()) ?? [];
         setServices(activeServices);
         setApiCategories(categories);
-        setShowingSavedServices(false);
         try {
           window.localStorage.setItem(serviceMenuCacheKey, JSON.stringify({ services: activeServices, categories } satisfies CachedServiceMenu));
         } catch {
@@ -88,10 +85,7 @@ export function FeaturedServicesSection() {
           <SectionHeading headingLevel="h2" headingId="featured-services-title" eyebrow="The service menu" title="Explore Our Premium Services" description="Discover services designed to help you look and feel your best." />
           <Link href="/services" className="inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-semibold text-[var(--green-light)] transition-colors hover:text-white focus-visible:rounded-md">Browse all services<ArrowRight className="size-4" aria-hidden="true" /></Link>
         </div>
-        {error && !services.length ? <ErrorState className="mt-8" description={error} onRetry={() => setRetryCount((count) => count + 1)} /> : loading && !services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading featured salon services" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <ServiceCardSkeleton key={index} />)}</div> : services.length ? <>
-          {showingSavedServices && <p role="status" className="mt-6 rounded-xl border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-100">Showing the last saved service list while we reconnect. Prices and availability may be outdated.</p>}
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.slice(0, 6).map((service) => <ServiceCard key={service._id} service={service} />)}</div>
-        </> : <div className="mt-8"><EmptyState icon={<Scissors className="size-5" />} title="No active services yet" description="The salon’s service list will appear here when services are available." /></div>}
+        {error && !services.length ? <ErrorState className="mt-8" description={error} onRetry={() => setRetryCount((count) => count + 1)} /> : loading && !services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading featured salon services" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <ServiceCardSkeleton key={index} />)}</div> : services.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.slice(0, 6).map((service) => <ServiceCard key={service._id} service={service} />)}</div> : <div className="mt-8"><EmptyState icon={<Scissors className="size-5" />} title="No active services yet" description="The salon’s service list will appear here when services are available." /></div>}
       </Container>
     </section>
 
