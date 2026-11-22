@@ -49,7 +49,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const sessionErrorStatus = getErrorStatus(sessionError);
   const transientSessionError = Boolean(sessionError) && (sessionErrorStatus === undefined || isTransientHttpStatus(sessionErrorStatus));
   const hasSessionErrorToRetry = transientSessionError && sessionRetryCount < MAX_SESSION_RETRIES;
-  const hasCachedProfile = Boolean(user && profileLoadedForUser.current === user.id);
+  const hasCachedProfile = Boolean(user && profileLoadedForUser.current === user._id);
 
   useEffect(() => {
     if (!sessionError || sessionPending || sessionRefetching || sessionRetrying || sessionUserId) {
