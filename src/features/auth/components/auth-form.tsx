@@ -280,7 +280,12 @@ function authErrorMessage(error: AuthError, kind: "login" | "register" | "google
   if (kind === "register" && (status === 409 || code.includes("EXISTS") || message.includes("already exists") || message.includes("already registered"))) {
     return "An account with this email already exists. Sign in instead.";
   }
-  if (status === 429 || message.includes("too many sign-in attempts")) return "Too many sign-in attempts. Wait 15 minutes and try again.";
+  if (status === 429) {
+    return message.includes("too many sign-in attempts")
+      ? "Too many sign-in attempts. Wait a few seconds, then try again."
+      : "Too many requests. Wait a short while, then try again.";
+  }
+  if (message.includes("too many sign-in attempts")) return "Too many sign-in attempts. Wait a few seconds, then try again.";
   if (kind === "login" && (status === 401 || code.includes("INVALID_EMAIL_OR_PASSWORD") || message.includes("invalid email or password"))) {
     return "Email or password is incorrect.";
   }
