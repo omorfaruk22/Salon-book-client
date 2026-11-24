@@ -51,6 +51,14 @@ function LoginForm() {
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
 
   useEffect(() => {
+    if (!error.toLowerCase().startsWith("too many ")) return;
+    const timeout = window.setTimeout(() => {
+      setError((current) => current === error ? "" : current);
+    }, 10_000);
+    return () => window.clearTimeout(timeout);
+  }, [error]);
+
+  useEffect(() => {
     const queryError = new URLSearchParams(window.location.search).get("error");
     if (queryError === "blocked") setError("This account is blocked. Contact the salon administrator.");
     if (queryError === "google") setError("Google sign-in was cancelled or could not be completed. Try again or use email and password.");
@@ -109,6 +117,14 @@ function RegistrationForm() {
     resolver: zodResolver(registrationSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "", imageUrl: "" },
   });
+
+  useEffect(() => {
+    if (!error.toLowerCase().startsWith("too many ")) return;
+    const timeout = window.setTimeout(() => {
+      setError((current) => current === error ? "" : current);
+    }, 10_000);
+    return () => window.clearTimeout(timeout);
+  }, [error]);
 
   async function submit(values: RegistrationValues) {
     setError("");
