@@ -37,7 +37,10 @@ const registrationSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 type RegistrationValues = z.infer<typeof registrationSchema>;
 type AuthError = { message?: string; code?: string | null; status?: number; statusCode?: number };
-const authRetryDelays = [3_000, 7_000, 12_000, 15_000, 20_000] as const;
+// Login/signup POSTs count toward Better Auth's rate limit. Make at most one
+// retry, after the server's 10-second auth window, instead of replaying the
+// same credentials several times during a cold start.
+const authRetryDelays = [15_000] as const;
 
 export function AuthForm({ mode }: AuthFormProps) {
   return mode === "register" ? <RegistrationForm /> : <LoginForm />;
