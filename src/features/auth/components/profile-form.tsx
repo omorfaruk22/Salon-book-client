@@ -9,6 +9,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/components/providers/toast-provider";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GoogleAccountLink } from "@/features/auth/components/google-account-link";
 import type { ApiEnvelope } from "@/types/service";
 import type { SalonUser } from "@/types/appointment";
 
@@ -101,6 +102,8 @@ export function ProfileForm() {
     </div>
 
     <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:grid-cols-2"><div><p className="text-xs uppercase tracking-wider text-[var(--muted)]">Email address</p><p className="mt-1 break-all text-sm font-medium">{profile.email}</p><p className="mt-1 text-xs text-[var(--muted)]">Email changes are not available from this profile form.</p></div><div><p className="text-xs uppercase tracking-wider text-[var(--muted)]">Account created</p><p className="mt-1 text-sm font-medium">{new Intl.DateTimeFormat("en-BD", { dateStyle: "medium" }).format(new Date(profile.createdAt))}</p></div></div>
+
+    <GoogleAccountLink email={profile.email} />
 
     {error && <p role="alert" className="rounded-xl border border-red-900/70 bg-red-950/35 p-3 text-sm text-red-200">{error}</p>}
     <button type="submit" disabled={saving || uploading} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--primary)] px-5 font-semibold text-white transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-light)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">{saving ? "Saving profile…" : "Save profile"}</button>

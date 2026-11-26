@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ShieldCheck, UserRound } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { GoogleAccountLink } from "@/features/auth/components/google-account-link";
 
 export function AdminProfileOverview() {
   const { user, avatarUrl, isLoading } = useAuth();
@@ -17,6 +18,7 @@ export function AdminProfileOverview() {
       <dl className="grid gap-x-8 gap-y-5 pt-6 sm:grid-cols-2"><ProfileValue label="Full name" value={user?.name || "—"} /><ProfileValue label="Email address" value={user?.email || "—"} /><ProfileValue label="Account role" value={user?.role || "Administrator"} capitalize /><ProfileValue label="Account status" value={user?.status || "active"} capitalize /></dl>
       <p className="mt-7 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-xs leading-5 text-[var(--muted)]">Profile data is read from the authenticated account. Admin profile editing is not part of this dashboard phase.</p>
     </section>
+    {user?.email && <GoogleAccountLink email={user.email} />}
   </main>;
 }
 

@@ -64,7 +64,11 @@ function LoginForm() {
   useEffect(() => {
     const queryError = new URLSearchParams(window.location.search).get("error");
     if (queryError === "blocked") setError("This account is blocked. Contact the salon administrator.");
-    if (queryError === "google") setError("Google sign-in was cancelled or could not be completed. Try again or use email and password.");
+    if (queryError === "account_not_linked" || queryError === "unable_to_link_account") {
+      setError("This email already has a SalonBook account. Sign in with email and password first, then connect Google from My Profile.");
+    } else if (queryError === "google") {
+      setError("Google sign-in was not completed. If you already have a SalonBook account with this email, sign in with your password first, then connect Google from My Profile.");
+    }
   }, []);
 
   async function submit(values: LoginValues) {
@@ -296,6 +300,9 @@ function authErrorMessage(error: AuthError, kind: "login" | "register" | "google
   const code = (error.code ?? "").toUpperCase();
   const message = (error.message ?? "").toLowerCase();
   const status = authErrorStatus(error);
+  if (kind === "google" && (code.includes("ACCOUNT_NOT_LINKED") || code.includes("UNABLE_TO_LINK_ACCOUNT") || message.includes("account not linked"))) {
+    return "This email already has a SalonBook account. Sign in with email and password first, then connect Google from My Profile.";
+  }
   if (kind === "register" && (status === 409 || code.includes("EXISTS") || message.includes("already exists") || message.includes("already registered"))) {
     return "An account with this email already exists. Sign in instead.";
   }
@@ -315,6 +322,6 @@ function authErrorMessage(error: AuthError, kind: "login" | "register" | "google
   if (status && status >= 500 || /failed to fetch|network error|networkerror|load failed|bad gateway|service unavailable|temporarily unavailable|unexpected token|doctype/i.test(message)) {
     return "SalonBook is waking up or temporarily unavailable. Wait a moment, then try again.";
   }
-  if (kind === "google") return "Google sign-in was cancelled or could not be completed. Try again or use email and password.";
+  if (kind === "google") return "Google sign-in was not completed. If you already have a SalonBook account with this email, sign in with your password first, then connect Google from My Profile.";
   return kind === "register" ? "We could not create the account. Check your details and try again." : "We could not sign you in. Check your details and try again.";
 }
